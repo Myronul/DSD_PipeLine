@@ -1,0 +1,17 @@
+Vivado Simulator 2020.2
+Copyright 1986-1999, 2001-2020 Xilinx, Inc. All Rights Reserved.
+Running: C:/Xilinx/Vivado/2020.2/bin/unwrapped/win64.o/xelab.exe -wto c966f0b08ff042648ceedc155f93df71 --incr --debug typical --relax --mt 2 -L xil_defaultlib -L unisims_ver -L unimacro_ver -L secureip --snapshot sim_fetch_behav xil_defaultlib.sim_fetch xil_defaultlib.glbl -log elaborate.log 
+Using 2 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+WARNING: [VRFC 10-3091] actual bit length 32 differs from formal bit length 20 for port 'jmpPC' [C:/Users/mandr/Desktop/Projects/Verilog/DSD1_PipeLine/DSD1_PipeLine.srcs/sim_1/new/sim_fetch.v:17]
+WARNING: [VRFC 10-3091] actual bit length 32 differs from formal bit length 20 for port 'PC' [C:/Users/mandr/Desktop/Projects/Verilog/DSD1_PipeLine/DSD1_PipeLine.srcs/sim_1/new/sim_fetch.v:19]
+WARNING: [VRFC 10-3091] actual bit length 32 differs from formal bit length 16 for port 'IR' [C:/Users/mandr/Desktop/Projects/Verilog/DSD1_PipeLine/DSD1_PipeLine.srcs/sim_1/new/sim_fetch.v:20]
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.fetch_stage
+Compiling module xil_defaultlib.sim_fetch
+Compiling module xil_defaultlib.glbl
+Built simulation snapshot sim_fetch_behav
