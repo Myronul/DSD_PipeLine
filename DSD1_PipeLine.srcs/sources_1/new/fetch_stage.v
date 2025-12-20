@@ -17,7 +17,6 @@ wire [`INSTR_SIZE-1:0] instMemData;
 
 /*instantiere memorie*/
 instr_memory MEM (
-    .clk(clk),
     .addr(PC),
     .dataOut(instMemData)
 );

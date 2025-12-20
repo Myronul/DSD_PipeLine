@@ -1,17 +1,25 @@
 Vivado Simulator 2020.2
 Copyright 1986-1999, 2001-2020 Xilinx, Inc. All Rights Reserved.
-Running: C:/Xilinx/Vivado/2020.2/bin/unwrapped/win64.o/xelab.exe -wto c966f0b08ff042648ceedc155f93df71 --incr --debug typical --relax --mt 2 -L xil_defaultlib -L unisims_ver -L unimacro_ver -L secureip --snapshot sim_fetch_behav xil_defaultlib.sim_fetch xil_defaultlib.glbl -log elaborate.log 
+Running: C:/Xilinx/Vivado/2020.2/bin/unwrapped/win64.o/xelab.exe -wto c966f0b08ff042648ceedc155f93df71 --incr --debug typical --relax --mt 2 -L xil_defaultlib -L unisims_ver -L unimacro_ver -L secureip --snapshot cpu_sim_behav xil_defaultlib.cpu_sim xil_defaultlib.glbl -log elaborate.log 
 Using 2 slave threads.
 Starting static elaboration
 Pass Through NonSizing Optimizer
-WARNING: [VRFC 10-3091] actual bit length 32 differs from formal bit length 20 for port 'jmpPC' [C:/Users/mandr/Desktop/Projects/Verilog/DSD1_PipeLine/DSD1_PipeLine.srcs/sim_1/new/sim_fetch.v:17]
-WARNING: [VRFC 10-3091] actual bit length 32 differs from formal bit length 20 for port 'PC' [C:/Users/mandr/Desktop/Projects/Verilog/DSD1_PipeLine/DSD1_PipeLine.srcs/sim_1/new/sim_fetch.v:19]
-WARNING: [VRFC 10-3091] actual bit length 32 differs from formal bit length 16 for port 'IR' [C:/Users/mandr/Desktop/Projects/Verilog/DSD1_PipeLine/DSD1_PipeLine.srcs/sim_1/new/sim_fetch.v:20]
+WARNING: [VRFC 10-3091] actual bit length 3 differs from formal bit length 32 for port 'RRop1' [C:/Users/mandr/Desktop/Projects/Verilog/DSD1_PipeLine/DSD1_PipeLine.srcs/sources_1/new/cpu_pipe.v:61]
+WARNING: [VRFC 10-3091] actual bit length 3 differs from formal bit length 32 for port 'RRop2' [C:/Users/mandr/Desktop/Projects/Verilog/DSD1_PipeLine/DSD1_PipeLine.srcs/sources_1/new/cpu_pipe.v:62]
+WARNING: [VRFC 10-3091] actual bit length 3 differs from formal bit length 32 for port 'RRop1' [C:/Users/mandr/Desktop/Projects/Verilog/DSD1_PipeLine/DSD1_PipeLine.srcs/sources_1/new/cpu_pipe.v:87]
+WARNING: [VRFC 10-3091] actual bit length 3 differs from formal bit length 32 for port 'RRop2' [C:/Users/mandr/Desktop/Projects/Verilog/DSD1_PipeLine/DSD1_PipeLine.srcs/sources_1/new/cpu_pipe.v:88]
 Completed static elaboration
 Starting simulation data flow analysis
 Completed simulation data flow analysis
 Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.instr_memory
 Compiling module xil_defaultlib.fetch_stage
-Compiling module xil_defaultlib.sim_fetch
+Compiling module xil_defaultlib.read_stage
+Compiling module xil_defaultlib.cpu_registers
+Compiling module xil_defaultlib.execute_stage
+Compiling module xil_defaultlib.data_memory
+Compiling module xil_defaultlib.write_back_stage
+Compiling module xil_defaultlib.cpu_pipe
+Compiling module xil_defaultlib.cpu_sim
 Compiling module xil_defaultlib.glbl
-Built simulation snapshot sim_fetch_behav
+Built simulation snapshot cpu_sim_behav

@@ -5,8 +5,8 @@ module execute_stage(
     output memRd,
     output memWr,
     /*signals from the read stage to the execute*/
-    input [`REG_ADR-1:0]RRop1, /*Read register that will contain: OP1 | OP2 | DEST */
-    input [`REG_ADR-1:0]RRop2,
+    input [`D_SIZE-1:0]RRop1, /*Read register that will contain: OP1 | OP2 | DEST */
+    input [`D_SIZE-1:0]RRop2,
     input [`REG_ADR-1:0]RRdest,
     input [`OPCODE_SIZE-1:0]RRopcode, /*the opcode of the instrction*/
     /*output data to the write back stage*/

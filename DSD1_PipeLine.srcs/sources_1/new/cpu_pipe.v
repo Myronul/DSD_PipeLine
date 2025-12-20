@@ -34,10 +34,9 @@ module cpu_pipe(
     wire memWr;
     wire memRd;
     
-    /*write back and executes*/
-    wire [`D_SIZE-1:0]dataInput; /*dataOutput from execute stage*/
-    wire [`REG_ADR-1:0] wb_regAddr = 0;
-    wire [`D_SIZE-1:0] wb_regValue = 0;
+    /*write back and executes outputs*/
+    wire [`REG_ADR-1:0] wb_regAddr;
+    wire [`D_SIZE-1:0] wb_regValue;
     
 
     fetch_stage FETCH (
@@ -51,6 +50,7 @@ module cpu_pipe(
 
 
     read_stage READ (
+        .rst(rst),
         .clk(clk),
         .IR(IR),//pipeline input
         .operandAddr1(operandAddr1),
@@ -105,6 +105,20 @@ module cpu_pipe(
         .dataMemAddr(addrMem),
         .dataMemDatain(dataInMem),
         .dataMemDataout(dataOutMem)
+    );
+    
+    
+    write_back_stage WRITEBACK (
+       .clk(clk),
+       .rst(rst),
+       /*data from data memory*/
+       .dataInMem(dataOutMem),
+       /*data from pipeline reg*/
+       .dataIn(dataOut),
+       .dataDest(dataDest),
+       /*registers*/
+       .regAddress(wb_regAddr),
+       .regValue(wb_regValue) 
     );
     
     

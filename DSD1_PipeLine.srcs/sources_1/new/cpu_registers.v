@@ -14,7 +14,14 @@ module cpu_registers(
 );
 
 /*defines registers memory*/
-reg [`D_SIZE-1:0]REG[`REG_ADR-1:0]; /*8 registers*/
+reg [`D_SIZE-1:0]REG[0:`REG_ADR-1]; /*8 registers*/
+integer i = 0;
+
+initial begin
+    for(i=0;i<8;i=i+1) begin
+        REG[i] = 32'h00000000;
+    end
+end
 
 always@(*) begin
     /*read stage*/
