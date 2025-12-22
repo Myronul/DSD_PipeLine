@@ -8,6 +8,7 @@ module fetch_stage(
     input wire rst,
     input wire [`A_SIZE-1:0] jmpPC, /*new adr for pc sent by EXECUTE stage*/
     input wire pc_wr_enable,
+    input flush, /*flush signal from execute jmp instr*/
     
     output reg [`A_SIZE-1:0] PC, /*update the PC*/
     output reg [`INSTR_SIZE-1:0] IR /*output the instruction in the pipeline register*/   
@@ -27,11 +28,19 @@ always @(posedge clk or posedge rst) begin
         PC <= 0;
         IR <= 0;
     end else begin
-        IR <= instMemData; /*un ciclu intarziere*/
-        PC <= pc_wr_enable ? jmpPC : (PC + 1);
+        if(flush) begin
+            IR <= 16'h0000; /*NOP*/
+        end
+        else begin
+            IR <= instMemData;
+        end
+        
+        if(pc_wr_enable)
+            PC <= jmpPC;
+        else
+            PC <= PC + 1;
     end
 end
-
 
 
 endmodule

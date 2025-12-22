@@ -16,21 +16,25 @@ initial begin
 end
 
 initial begin
-    instrMemory[0] = 16'b0000101001001001;
-    instrMemory[1] = 16'b0000101001001001;
-    instrMemory[2] = 16'b0000101001001001;
-    instrMemory[3] = 16'b0000101001001001;
-    instrMemory[4] = 16'b0000101001001001;
-    instrMemory[5] = 16'b0000101001001001;
-    instrMemory[6] = 16'b0000101001001001;
-    instrMemory[7] = 16'b0000101001001001;
-    instrMemory[8] = 16'b0000101001001001;
-    instrMemory[9] = 16'b0000101001001001;
-    instrMemory[10] = 16'b0000101001001001;
-    instrMemory[11] = 16'b0000101001001001;
-    instrMemory[12] = 16'b0000101001001001;
-    instrMemory[13] = 16'b0000101001001001;
-    instrMemory[14] = 16'b0000101001001001;
+    instrMemory[0] = 16'b1100001000000111; /*LOADC R2,7*/
+    instrMemory[1] = 16'b1100001100000011; /*LOADC R3,3*/
+    instrMemory[2] = 16'b0000000000000000; /*NOP*/
+    instrMemory[3] = 16'b0000000000000000; /*NOP*/
+    instrMemory[4] = 16'b0000000000000000; /*NOP*/
+    instrMemory[5] = 16'b0000001010010011; /*ADD R2,R2,R3*/
+    instrMemory[6] = 16'b0000000000000000;
+    instrMemory[7] = 16'b0000000000000000;
+    instrMemory[8] = 16'b0000000000000000;
+    instrMemory[9] = 16'b0000000000000000;
+    instrMemory[10] = 16'b0000000000000000;
+    instrMemory[11] = 16'b0000000000000000;
+    instrMemory[12] = 16'b0000000000000000;
+    instrMemory[13] = 16'b0000000000000000;
+    instrMemory[14] = 16'b0000000000000000;
+    instrMemory[15] = 16'b0000000000000000;
+    instrMemory[16] = 16'b0000000000000000;
+    instrMemory[17] = 16'b0000000000000000;
+    instrMemory[18] = 16'b0000000000000000;
 end
 
 

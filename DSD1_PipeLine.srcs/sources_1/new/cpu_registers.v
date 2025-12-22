@@ -14,7 +14,7 @@ module cpu_registers(
 );
 
 /*defines registers memory*/
-reg [`D_SIZE-1:0]REG[0:`REG_ADR-1]; /*8 registers*/
+reg [`D_SIZE-1:0]REG[7:0]; /*8 registers*/
 integer i = 0;
 
 initial begin
