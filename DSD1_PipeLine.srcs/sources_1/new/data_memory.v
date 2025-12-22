@@ -11,36 +11,38 @@ module data_memory(
     output reg [`D_SIZE-1:0]dataMemDataout
 );
 
-reg [`D_SIZE-1:0]MemData[`A_SIZE-1:0];
+reg [`D_SIZE-1:0]MemData[(`A_SIZE)-1:0];
 
 reg [1:0]state=0;
 reg [`A_SIZE-1:0]RegAddr;
-reg [`D_SIZE-1:0]RegData;
+
+integer i;
+initial begin
+for(i=0;i<(`A_SIZE);i=i+1)begin
+    MemData[i] = 0;
+end
+RegAddr = 0;
+end
+
 
 always@(posedge clk) begin  
-    case(state)
-        0: begin /*execute stage*/
-           if(memRd == 1) begin
-                RegAddr <= dataMemAddr;
-                state <= 1;
-                end
-           if(memWr == 1) begin /*data ready!*/
-                MemData[dataMemAddr] <= dataMemDatain;
-                end
-           end
-           
-        1: begin /*writeback stage*/
-           if(memRd == 1) begin
-                dataMemDataout <= RegData;
-                state <= 0;
-           end
-        end
-    endcase
+    if (memRd == 1) begin
+        RegAddr <= dataMemAddr;
+    end
 end
 
 always@(*) begin
-   RegData = MemData[RegAddr];    
+    /*value taken next clock by cpu*/
+    dataMemDataout = MemData[RegAddr];
 end
+
+
+always@(posedge clk) begin
+    if (memWr == 1) begin
+        MemData[dataMemAddr] <= dataMemDatain;
+    end
+end
+
 
 
 endmodule

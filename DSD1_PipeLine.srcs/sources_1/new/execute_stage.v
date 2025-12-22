@@ -2,8 +2,9 @@
 
 module execute_stage(
     input clk,
+    output reg stall,
     output reg memRd,
-    output memWr,
+    output reg memWr,
     output reg loadMem,
     /*signals from the read stage to the execute*/
     input [`D_SIZE-1:0]RRop1, /*Read register that will contain: OP1 | OP2 | DEST */
@@ -15,7 +16,7 @@ module execute_stage(
     output reg [`REG_ADR-1:0]dataDest,
     /*signals for the memory data*/
     output reg [`A_SIZE-1:0]addrMem, /*obs! vezi sa fie activare semnalelor secventiala ca in memorie se scrie pe ceas!*/
-    output [`D_SIZE-1:0]dataOutMem,
+    input [`D_SIZE-1:0]dataOutMem,
     /*signals for the jmp instruction to the fetch stage*/
     output [`A_SIZE-1:0] jmpPC,
     output pc_wr_enable, 
@@ -23,7 +24,7 @@ module execute_stage(
 );
 
 reg [`D_SIZE-1:0]RegResult;
-reg [1:0]state;
+reg [1:0]stateRead;
 
 initial begin
 loadMem = 0;
@@ -78,17 +79,10 @@ always@(*)begin
          `SHIFTL: begin
                RegResult = RRop1 << RRop2;
                end
-          default: begin case(RRopcode[4:0])
-                   `LOAD: begin
-                   /*stall fetch and read*/
-                   memRd = 1;
-                   addrMem = RRop1[`A_SIZE-1:0];
-                   end  
-                   `LOADC: begin
-                   RegResult = RRop1;
-                   end 
-        endcase
-      end                                    
+         `LOADC: begin
+               RegResult = RRop1;  
+               end
+          default: RegResult = 0;                                     
     endcase
     
 end
@@ -96,8 +90,46 @@ end
 
 always@(posedge clk) begin
     /*add fsm for memRd and stall logic*/
-    dataOut <= RegResult;
-    dataDest <= RRdest;
+    
+    if(stateRead!=0) begin
+        case(stateRead)
+            1: begin    
+            stateRead <= 2;
+            end
+            
+            2: begin
+            dataOut <= dataOutMem;
+            dataDest <= RRdest;
+            memRd <= 0;
+            stall <= 0;
+            stateRead <= 0;
+            end
+        endcase
+    end    
+    
+    else if(RRopcode[4:0] == `LOAD) begin
+        /*on clock enable read*/
+        stall <= 1;
+        memRd <= 1;
+        memWr <= 0;
+        addrMem <= RRop1[`A_SIZE-1:0];
+        stateRead <= 1;
+    end
+    
+    else if(RRopcode[4:0] == `STORE)begin
+        memWr <= 1;
+        dataOut <= 0;
+        dataDest <= 0;        
+    end
+    
+    else begin
+        /*normal case for no laod no store*/
+        memWr <= 0;
+        dataOut <= RegResult;
+        dataDest <= RRdest;
+    end
+    
+
 end
 
 

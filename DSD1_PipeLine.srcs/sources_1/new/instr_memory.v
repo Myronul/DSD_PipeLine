@@ -6,11 +6,11 @@ module instr_memory(
     output [`INSTR_SIZE-1:0]dataOut
 );
 
-reg [`INSTR_SIZE-1:0]instrMemory[0:`A_SIZE-1]; /*instruction memory A_SIZE locations each of INSTR_SIZE*/
+reg [`INSTR_SIZE-1:0]instrMemory[0:(`A_SIZE)-1]; /*instruction memory A_SIZE locations each of INSTR_SIZE*/
 integer i = 0;
 
 initial begin
-    for(i=0;i<`A_SIZE;i=i+1) begin
+    for(i=0;i<(`A_SIZE);i=i+1) begin
         instrMemory[i] = 16'h0000;
     end
 end

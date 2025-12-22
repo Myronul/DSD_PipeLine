@@ -6,11 +6,12 @@ module cpu_pipe(
 );
 
     /*wire to connect all the modules*/
+    wire flush;
+    wire stall;
 
     /*fetch*/
     wire [`INSTR_SIZE-1:0] IR;
     wire pc_wr_enable;
-    wire flush;
     wire [`A_SIZE-1:0] jmpPC;
     wire [`A_SIZE-1:0] PC;    
 
@@ -47,6 +48,7 @@ module cpu_pipe(
         .jmpPC(jmpPC),
         .pc_wr_enable(pc_wr_enable),
         .flush(flush),
+        .stall(stall),
         .PC(PC),
         .IR(IR)
     );
@@ -56,6 +58,7 @@ module cpu_pipe(
         .rst(rst),
         .clk(clk),
         .flush(flush),
+        .stall(stall),
         .IR(IR),//pipeline input
         .operandAddr1(operandAddr1),
         .operandValue1(operandValue1),
@@ -102,6 +105,7 @@ module cpu_pipe(
         //jmp signals to the fetch
         .jmpPC(jmpPC),
         .flush(flush),/*sent from execute stage to fetch and read*/
+        .stall(stall),/*sent from execute stage to fetch and read*/
         .pc_wr_enable(pc_wr_enable)
     );
     

@@ -11,6 +11,7 @@ module read_stage(
     input rst,
     input clk,
     input flush, /*flush signal from execute jmp instr*/
+    input stall, /*stall sgn for load*/
     input [`INSTR_SIZE-1:0]IR,
     output reg [`REG_ADR-1:0] operandAddr1, /*send registers address*/
     input [`D_SIZE-1:0] operandValue1,
@@ -73,9 +74,13 @@ always@(posedge clk or posedge rst) begin
         RRop1 <= 0;
         RRop2 <= 0;
         RRdest <= 0;
-        RRopcode <=0;        
-    end
-    else begin
+        RRopcode <= 0;        
+    end else if(stall) begin
+        RRop1 <= RRop1;
+        RRop2 <= RRop2;
+        RRdest <= RRdest;
+        RRopcode <= RRopcode; 
+    end else begin
     case(IR[`FIELD_OPCODE_7])
         `NOP: begin
               RRopcode <= IR[`FIELD_OPCODE_7];/*do nothing*/
@@ -174,7 +179,7 @@ always@(posedge clk or posedge rst) begin
                    RRopcode <= IR[`FIELD_OPCODE_5];
                    end      
              `STORE: begin
-                   RRop1 <= operandValue1;
+                   RRop1 <= operandValue1; /*address*/
                    RRdest <= IR[10:8];
                    RRopcode <= IR[`FIELD_OPCODE_5];
                    end
