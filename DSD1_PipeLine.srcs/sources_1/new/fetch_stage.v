@@ -27,23 +27,20 @@ instr_memory MEM (
 always @(posedge clk or posedge rst) begin
     if (rst) begin
         PC <= 0;
-        IR <= 0;
+        IR <= 16'h0000;
     end else begin
-        if(flush) begin
-            IR <= 16'h0000; /*NOP*/
-        end
-        else if(stall) begin
+        if (pc_wr_enable) begin
+            IR <= 16'h0000;  // NOP
+            PC <= jmpPC;
+        end else if (stall) begin
             PC <= PC;
             IR <= IR;
-        end
-        else begin
-            IR <= instMemData;
-        end
-        
-        if(pc_wr_enable)
+        end else if (flush) begin
             PC <= jmpPC;
-        else
+        end else begin
+            IR <= instMemData;
             PC <= PC + 1;
+        end
     end
 end
 

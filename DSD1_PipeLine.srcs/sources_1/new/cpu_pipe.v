@@ -1,5 +1,6 @@
 `timescale 1ns / 1ps
 `include"cpu_macros.vh"
+
 module cpu_pipe(
     input wire clk,
     input wire rst
@@ -36,6 +37,7 @@ module cpu_pipe(
     wire memWr;
     wire memRd;
     wire loadMem;
+    wire loadEnable;
     
     /*write back and executes outputs*/
     wire [`REG_ADR-1:0] wb_regAddr;
@@ -90,7 +92,6 @@ module cpu_pipe(
         //memory connections
         .memWr(memWr),
         .memRd(memRd),
-        .loadMem(loadMem),
         //pipeline inputs from read
         .RRop1(RRop1),
         .RRop2(RRop2),
@@ -99,9 +100,11 @@ module cpu_pipe(
         //pipeline output
         .dataOut(dataOut),
         .dataDest(dataDest),
+        .loadMem(loadMem),/*sequential to the wb*/
+        .loadEnable(loadEnable),
         //memory output signals
         .addrMem(addrMem),
-        .dataOutMem(dataOutMem),
+        .dataMem(dataInMem),
         //jmp signals to the fetch
         .jmpPC(jmpPC),
         .flush(flush),/*sent from execute stage to fetch and read*/
@@ -124,6 +127,7 @@ module cpu_pipe(
     write_back_stage WRITEBACK (
        /*data from data memory*/
        .loadMem(loadMem),
+       .loadEnable(loadEnable),
        .dataInMem(dataOutMem),
        /*data from pipeline reg*/
        .dataIn(dataOut),

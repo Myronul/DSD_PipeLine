@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="cpu_sim_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="cpu_sim" />
+            <top_module name="glbl" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="80199fs"></ZoomStartTime>
+      <ZoomEndTime time="181800fs"></ZoomEndTime>
+      <Cursor1Time time="520000fs"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="209"></NameColumnWidth>
+      <ValueColumnWidth column_width="83"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="23" />
+   <wvobject fp_name="/cpu_sim/clk" type="logic">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cpu_sim/rst" type="logic">
+      <obj_property name="ElementShortName">rst</obj_property>
+      <obj_property name="ObjectShortName">rst</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cpu_sim/dut/FETCH/PC" type="array">
+      <obj_property name="ElementShortName">PC[19:0]</obj_property>
+      <obj_property name="ObjectShortName">PC[19:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cpu_sim/dut/FETCH/IR" type="array">
+      <obj_property name="ElementShortName">IR[15:0]</obj_property>
+      <obj_property name="ObjectShortName">IR[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cpu_sim/dut/FETCH/stall" type="logic">
+      <obj_property name="ElementShortName">stall</obj_property>
+      <obj_property name="ObjectShortName">stall</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cpu_sim/dut/FETCH/flush" type="logic">
+      <obj_property name="ElementShortName">flush</obj_property>
+      <obj_property name="ObjectShortName">flush</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cpu_sim/dut/EXECUTE/flag" type="logic">
+      <obj_property name="ElementShortName">flag</obj_property>
+      <obj_property name="ObjectShortName">flag</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cpu_sim/dut/REGFILE/REG" type="array">
+      <obj_property name="ElementShortName">REG[7:0][31:0]</obj_property>
+      <obj_property name="ObjectShortName">REG[7:0][31:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/cpu_sim/dut/READ/RRopcode" type="array">
+      <obj_property name="ElementShortName">RRopcode[6:0]</obj_property>
+      <obj_property name="ObjectShortName">RRopcode[6:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cpu_sim/dut/WRITEBACK/loadMem" type="logic">
+      <obj_property name="ElementShortName">loadMem</obj_property>
+      <obj_property name="ObjectShortName">loadMem</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cpu_sim/dut/WRITEBACK/dataInMem" type="array">
+      <obj_property name="ElementShortName">dataInMem[31:0]</obj_property>
+      <obj_property name="ObjectShortName">dataInMem[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cpu_sim/dut/WRITEBACK/dataIn" type="array">
+      <obj_property name="ElementShortName">dataIn[31:0]</obj_property>
+      <obj_property name="ObjectShortName">dataIn[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cpu_sim/dut/WRITEBACK/dataDest" type="array">
+      <obj_property name="ElementShortName">dataDest[2:0]</obj_property>
+      <obj_property name="ObjectShortName">dataDest[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cpu_sim/dut/DATAMEM/clk" type="logic">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cpu_sim/dut/DATAMEM/memRd" type="logic">
+      <obj_property name="ElementShortName">memRd</obj_property>
+      <obj_property name="ObjectShortName">memRd</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cpu_sim/dut/DATAMEM/memWr" type="logic">
+      <obj_property name="ElementShortName">memWr</obj_property>
+      <obj_property name="ObjectShortName">memWr</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cpu_sim/dut/DATAMEM/dataMemAddr" type="array">
+      <obj_property name="ElementShortName">dataMemAddr[19:0]</obj_property>
+      <obj_property name="ObjectShortName">dataMemAddr[19:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cpu_sim/dut/DATAMEM/dataMemDatain" type="array">
+      <obj_property name="ElementShortName">dataMemDatain[31:0]</obj_property>
+      <obj_property name="ObjectShortName">dataMemDatain[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cpu_sim/dut/DATAMEM/dataMemDataout" type="array">
+      <obj_property name="ElementShortName">dataMemDataout[31:0]</obj_property>
+      <obj_property name="ObjectShortName">dataMemDataout[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cpu_sim/dut/DATAMEM/MemData" type="array">
+      <obj_property name="ElementShortName">MemData[19:0][31:0]</obj_property>
+      <obj_property name="ObjectShortName">MemData[19:0][31:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/cpu_sim/dut/DATAMEM/state" type="array">
+      <obj_property name="ElementShortName">state[1:0]</obj_property>
+      <obj_property name="ObjectShortName">state[1:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cpu_sim/dut/DATAMEM/RegAddr" type="array">
+      <obj_property name="ElementShortName">RegAddr[19:0]</obj_property>
+      <obj_property name="ObjectShortName">RegAddr[19:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cpu_sim/dut/DATAMEM/i" type="array">
+      <obj_property name="ElementShortName">i[31:0]</obj_property>
+      <obj_property name="ObjectShortName">i[31:0]</obj_property>
+   </wvobject>
+</wave_config>

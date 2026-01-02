@@ -41,6 +41,7 @@ always@(*) begin
         case (IR[`FIELD_OPCODE_5])
             `LOAD, `STORE: begin
              operandAddr1 = IR[2:0];
+             operandAddr2 = IR[10:8];
              end
          default: begin
          
@@ -179,7 +180,8 @@ always@(posedge clk or posedge rst) begin
                    RRopcode <= IR[`FIELD_OPCODE_5];
                    end      
              `STORE: begin
-                   RRop1 <= operandValue1; /*address*/
+                   RRop1 <= operandValue1; /*value*/
+                   RRop2 <= operandValue2; /*address*/
                    RRdest <= IR[10:8];
                    RRopcode <= IR[`FIELD_OPCODE_5];
                    end
@@ -187,7 +189,7 @@ always@(posedge clk or posedge rst) begin
     
            case(IR[`FIELD_OPCODE_4])
                `JMP: begin
-                     RRop1 <= operandValue1;
+                     RRop1 <= operandValue1[`A_SIZE-1:0];
                      RRopcode <= IR[`FIELD_OPCODE_4];
                      end
                `JMPR: begin

@@ -29,13 +29,13 @@
 `define SHIFTR   7'b0001011
 `define SHIFTRA  7'b0001100
 `define SHIFTL   7'b0001101
-`define LOAD     7'b10000 //5 bits 
-`define LOADC    7'b11000 //5 bits 
-`define STORE    7'b10100 //5 bits
-`define JMP      7'b0100 //4 bits 
-`define JMPR     7'b0110 //4 bits 
-`define JMPcond  7'b0101 //4 bits
-`define JMPRcond 7'b0111 //4bits
+`define LOAD     5'b10000 //5 bits 
+`define LOADC    5'b11000 //5 bits 
+`define STORE    5'b10100 //5 bits
+`define JMP      4'b1111 //4 bits 
+`define JMPR     4'b1110 //4 bits 
+`define JMPcond  4'b1101 //4 bits
+`define JMPRcond 4'b1001 //4bits
 
 //take bits from instructions to decode the opcodes
 `define FIELD_OPCODE_5 `INSTR_SIZE-1:`INSTR_SIZE-5 /*select bit expression 5 bit*/
