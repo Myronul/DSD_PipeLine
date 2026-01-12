@@ -16,6 +16,7 @@ module fetch_stage(
 );
 
 wire [`INSTR_SIZE-1:0] instMemData;
+reg  [`INSTR_SIZE-1:0] Queue[2:0]; /*IW for the maximum 5 instructions*/
 
 /*instantiere memorie*/
 instr_memory MEM (

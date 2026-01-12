@@ -153,6 +153,163 @@ always@(*)begin
                 pc_wr_enable = 1;
                 flush = 1;
                 end
+           `JMPcond: begin
+                case(RRopcode[2:0]) 
+                    3'b000: begin
+                            if(RRop1 <= 0) begin
+                               RegResult = 0;
+                               flag = 1; /*NOP*/
+                               jmpPC = RRop2[`A_SIZE-1:0];
+                               pc_wr_enable = 1;
+                               flush = 1;    
+                               end
+                               else begin
+                               RegResult = 0; /*do nothing*/
+                               flag = 1;
+                               jmpPC = 0;
+                               pc_wr_enable = 0;
+                               flush = 0;
+                               end
+                            end 
+                    3'b001: begin
+                            if(RRop1 >= 0) begin
+                               RegResult = 0;
+                               flag = 1; /*NOP*/
+                               jmpPC = RRop2[`A_SIZE-1:0];
+                               pc_wr_enable = 1;
+                               flush = 1;    
+                               end
+                               else begin
+                               RegResult = 0; /*do nothing*/
+                               flag = 1;
+                               jmpPC = 0;
+                               pc_wr_enable = 0;
+                               flush = 0;
+                               end
+                            end
+                    3'b010: begin
+                            if(RRop1 == 0) begin
+                               RegResult = 0;
+                               flag = 1; /*NOP*/
+                               jmpPC = RRop2[`A_SIZE-1:0];
+                               pc_wr_enable = 1;
+                               flush = 1;    
+                               end
+                               else begin
+                               RegResult = 0; /*do nothing*/
+                               flag = 1;
+                               jmpPC = 0;
+                               pc_wr_enable = 0;
+                               flush = 0;
+                               end
+                            end
+                    3'b011: begin
+                            if(RRop1 != 0) begin
+                               RegResult = 0;
+                               flag = 1; /*NOP*/
+                               jmpPC = RRop2[`A_SIZE-1:0];
+                               pc_wr_enable = 1;
+                               flush = 1;    
+                               end
+                               else begin
+                               RegResult = 0; /*do nothing*/
+                               flag = 1;
+                               jmpPC = 0;
+                               pc_wr_enable = 0;
+                               flush = 0;
+                               end
+                            end
+                default: begin
+                         RegResult = 0; /*do nothing*/
+                         flag = 1;
+                         jmpPC = 0;
+                         pc_wr_enable = 0;
+                         flush = 0;                         
+                         end
+                endcase
+                 end
+           `JMPR: begin
+                  RegResult = 0;
+                  flag = 1; /*NOP*/
+                  jmpPC = RRop1[5:0];
+                  pc_wr_enable = 1;
+                  flush = 1;                   
+                  end
+          `JMPRcond: begin
+                case(RRopcode[2:0]) 
+                    3'b000: begin
+                            if(RRop1 <= 0) begin
+                               RegResult = 0;
+                               flag = 1; /*NOP*/
+                               jmpPC = RRop2[5:0];
+                               pc_wr_enable = 1;
+                               flush = 1;    
+                               end
+                               else begin
+                               RegResult = 0; /*do nothing*/
+                               flag = 1;
+                               jmpPC = 0;
+                               pc_wr_enable = 0;
+                               flush = 0;
+                               end
+                            end 
+                    3'b001: begin
+                            if(RRop1 >= 0) begin
+                               RegResult = 0;
+                               flag = 1; /*NOP*/
+                               jmpPC = RRop2[5:0];
+                               pc_wr_enable = 1;
+                               flush = 1;    
+                               end
+                               else begin
+                               RegResult = 0; /*do nothing*/
+                               flag = 1;
+                               jmpPC = 0;
+                               pc_wr_enable = 0;
+                               flush = 0;
+                               end
+                            end
+                    3'b010: begin
+                            if(RRop1 == 0) begin
+                               RegResult = 0;
+                               flag = 1; /*NOP*/
+                               jmpPC = RRop2[5:0];
+                               pc_wr_enable = 1;
+                               flush = 1;    
+                               end
+                               else begin
+                               RegResult = 0; /*do nothing*/
+                               flag = 1;
+                               jmpPC = 0;
+                               pc_wr_enable = 0;
+                               flush = 0;
+                               end
+                            end
+                    3'b011: begin
+                            if(RRop1 != 0) begin
+                               RegResult = 0;
+                               flag = 1; /*NOP*/
+                               jmpPC = RRop2[5:0];
+                               pc_wr_enable = 1;
+                               flush = 1;    
+                               end
+                               else begin
+                               RegResult = 0; /*do nothing*/
+                               flag = 1;
+                               jmpPC = 0;
+                               pc_wr_enable = 0;
+                               flush = 0;
+                               end
+                            end
+                default: begin
+                         RegResult = 0; /*do nothing*/
+                         flag = 1;
+                         jmpPC = 0;
+                         pc_wr_enable = 0;
+                         flush = 0;                         
+                         end
+                endcase                     
+               end
           `LOAD: begin
                 RegResult = 0;
                 flag = 1;

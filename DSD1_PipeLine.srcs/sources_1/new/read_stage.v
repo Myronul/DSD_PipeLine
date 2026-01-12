@@ -56,6 +56,7 @@ always@(*) begin
               `JMPRcond: begin
                operandAddr1 = IR[8:6];
                end
+               default:;
           endcase
         end
       endcase
