@@ -16,7 +16,7 @@ module fetch_stage(
 );
 
 wire [`INSTR_SIZE-1:0] instMemData;
-reg  [`INSTR_SIZE-1:0] Queue[2:0]; /*IW for the maximum 5 instructions*/
+
 
 /*instantiere memorie*/
 instr_memory MEM (
@@ -39,6 +39,7 @@ always @(posedge clk or posedge rst) begin
         end else if (flush) begin
             PC <= jmpPC;
         end else begin
+            /*check queue IW possible hazard*/
             IR <= instMemData;
             PC <= PC + 1;
         end

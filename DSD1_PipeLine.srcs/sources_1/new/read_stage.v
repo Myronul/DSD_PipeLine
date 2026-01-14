@@ -10,9 +10,15 @@
 module read_stage(
     input rst,
     input clk,
+    /*IW registers*/
+    input [31:0] q0, /*list of instructions*/
+    input [31:0] q1,
+    input [31:0] q2,
+    input [31:0] q3,    
+    /*control signals*/
     input flush, /*flush signal from execute jmp instr*/
     input stall, /*stall sgn for load*/
-    input [`INSTR_SIZE-1:0]IR,
+    input [`INSTR_SIZE-1:0]IR, /*!!!!!!!!!it will be obtain combinationaly as a register*/
     output reg [`REG_ADR-1:0] operandAddr1, /*send registers address*/
     input [`D_SIZE-1:0] operandValue1,
     output reg [`REG_ADR-1:0] operandAddr2, /*send registers address*/

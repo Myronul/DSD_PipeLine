@@ -9,12 +9,19 @@ module cpu_pipe(
     /*wire to connect all the modules*/
     wire flush;
     wire stall;
+    wire stallFetch;
 
     /*fetch*/
     wire [`INSTR_SIZE-1:0] IR;
     wire pc_wr_enable;
     wire [`A_SIZE-1:0] jmpPC;
-    wire [`A_SIZE-1:0] PC;    
+    wire [`A_SIZE-1:0] PC;
+    
+    /*IW*/
+    wire [31:0] q0;
+    wire [31:0] q1;
+    wire [31:0] q2;
+    wire [31:0] q3;  
 
     /*read*/
     wire [`REG_ADR-1:0] operandAddr1;
@@ -50,9 +57,21 @@ module cpu_pipe(
         .jmpPC(jmpPC),
         .pc_wr_enable(pc_wr_enable),
         .flush(flush),
-        .stall(stall),
+        .stall(stallFetch),
         .PC(PC),
         .IR(IR)
+    );
+    
+    
+    IW IW (
+        .clk(clk),
+        .rst(rst),
+        .IR(IR),
+        .q0w(q0),
+        .q1w(q1),
+        .q2w(q2),
+        .q3w(q3),
+        .stall(stallFetch)
     );
 
 
@@ -61,7 +80,12 @@ module cpu_pipe(
         .clk(clk),
         .flush(flush),
         .stall(stall),
-        .IR(IR),//pipeline input
+        /*IW registers pipe*/
+        .q0(q0),
+        .q1(q1),
+        .q2(q2),
+        .q3(q3),
+        /*regfile*/
         .operandAddr1(operandAddr1),
         .operandValue1(operandValue1),
         .operandAddr2(operandAddr2),
