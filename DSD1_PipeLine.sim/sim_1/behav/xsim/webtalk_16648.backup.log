@@ -2,12 +2,12 @@
 # Webtalk v2020.2 (64-bit)
 # SW Build 3064766 on Wed Nov 18 09:12:45 MST 2020
 # IP Build 3064653 on Wed Nov 18 14:17:31 MST 2020
-# Start of session at: Sun Jan 18 23:03:31 2026
-# Process ID: 29380
+# Start of session at: Sat Jan 10 16:09:53 2026
+# Process ID: 16648
 # Current directory: C:/Users/mandr/Desktop/Projects/Verilog/DSD1_PipeLine/DSD1_PipeLine.sim/sim_1/behav/xsim
 # Command line: wbtcv.exe -mode batch -source C:/Users/mandr/Desktop/Projects/Verilog/DSD1_PipeLine/DSD1_PipeLine.sim/sim_1/behav/xsim/xsim.dir/cpu_sim_behav/webtalk/xsim_webtalk.tcl -notrace
 # Log file: C:/Users/mandr/Desktop/Projects/Verilog/DSD1_PipeLine/DSD1_PipeLine.sim/sim_1/behav/xsim/webtalk.log
 # Journal file: C:/Users/mandr/Desktop/Projects/Verilog/DSD1_PipeLine/DSD1_PipeLine.sim/sim_1/behav/xsim\webtalk.jou
 #-----------------------------------------------------------
 source C:/Users/mandr/Desktop/Projects/Verilog/DSD1_PipeLine/DSD1_PipeLine.sim/sim_1/behav/xsim/xsim.dir/cpu_sim_behav/webtalk/xsim_webtalk.tcl -notrace
-INFO: [Common 17-206] Exiting Webtalk at Sun Jan 18 23:03:31 2026...
+INFO: [Common 17-206] Exiting Webtalk at Sat Jan 10 16:09:53 2026...

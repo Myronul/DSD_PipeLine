@@ -23,7 +23,15 @@ module execute_stage(
     /*signals for the jmp instruction to the fetch stage*/
     output reg [`A_SIZE-1:0] jmpPC,
     output reg pc_wr_enable, 
-    output reg flush /*send signal to flush fetch and read pipe*/
+    output reg flush, /*send signal to flush fetch and read pipe*/
+    
+    input [7:0] wbIndexIn, 
+    output reg [7:0] wbIndexOut, /*signal to IW end instruction*/
+    
+    /*Data fowarindg from EX to READ unit RAW hazard*/
+    output reg [`REG_ADR-1:0] src, 
+    output reg [`D_SIZE-1:0] res,
+    output readyForward
 );
 
 reg [`D_SIZE-1:0]RegResult;
@@ -37,9 +45,12 @@ stall = 0;
 end
 
 
+
 /*define ALU combinational*/
 /*when RRop1 or RRop2 or RRopcode changes*/
 always@(*)begin
+    src = 0;
+    res = 0;
     case(RRopcode[`OPCODE_SIZE-1:0])
         `NOP: begin 
               RegResult = 0; /*do nothing*/
@@ -54,13 +65,18 @@ always@(*)begin
               jmpPC = 0;
               pc_wr_enable = 0;
               flush = 0;
+              /*data forwarding*/
+              res = RegResult;
+              src = RRdest;
               end
          `ADD: begin
                RegResult = RRop1 + RRop2;
                flag = 0;
                jmpPC = 0;
                pc_wr_enable = 0;
-               flush = 0;               
+               flush = 0;        
+               res = RegResult;
+               src = RRdest;       
                end
          `ADDF: begin
                RegResult = RRop1 + RRop2;
@@ -68,55 +84,71 @@ always@(*)begin
                jmpPC = 0;
                pc_wr_enable = 0;
                flush = 0;
+               res = RegResult;
+               src = RRdest; 
                end     
          `SUB: begin
                RegResult = RRop1 - RRop2;
                flag = 0;
                jmpPC = 0;
                pc_wr_enable = 0;
-               flush = 0;               
+               flush = 0;
+               res = RegResult;
+               src = RRdest;                
                end              
          `SUBF: begin
                RegResult = RRop1 - RRop2;
                flag = 0;
                jmpPC = 0;
                pc_wr_enable = 0;
-               flush = 0;               
+               flush = 0;
+               res = RegResult;
+               src = RRdest;                
                end
          `OR: begin
                RegResult = RRop1 | RRop2;
                flag = 0;
                jmpPC = 0;
                pc_wr_enable = 0;
-               flush = 0;               
+               flush = 0;
+               res = RegResult;
+               src = RRdest;                
                end
          `XOR: begin
                RegResult = RRop1 ^ RRop2;
                flag = 0;
                jmpPC = 0;
                pc_wr_enable = 0;
-               flush = 0;               
+               flush = 0;
+               res = RegResult;
+               src = RRdest;                
                end
          `NAND: begin
                RegResult = ~(RRop1 & RRop2);
                flag = 0;
                jmpPC = 0;
                pc_wr_enable = 0;
-               flush = 0;               
+               flush = 0;
+               res = RegResult;
+               src = RRdest;                
                end
          `NOR: begin
                RegResult = ~(RRop1 | RRop2);
                flag = 0;
                jmpPC = 0;
                pc_wr_enable = 0;
-               flush = 0;               
+               flush = 0;
+               res = RegResult;
+               src = RRdest;                
                end
          `NXOR: begin
                RegResult = ~(RRop1 ^ RRop2);
                flag = 0;
                jmpPC = 0;
                pc_wr_enable = 0;
-               flush = 0;               
+               flush = 0;
+               res = RegResult;
+               src = RRdest;                
                end 
          `SHIFTR: begin
                RegResult = RRop1 >> RRop2;
@@ -338,6 +370,9 @@ end
 
 always@(posedge clk) begin
     /*add fsm for memRd and stall logic*/
+    
+    wbIndexOut <= wbIndexIn;
+    
     if(stateRead!=0) begin
         case(stateRead)
             1: begin    

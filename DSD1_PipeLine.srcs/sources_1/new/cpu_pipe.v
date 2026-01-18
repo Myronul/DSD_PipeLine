@@ -21,7 +21,11 @@ module cpu_pipe(
     wire [31:0] q0;
     wire [31:0] q1;
     wire [31:0] q2;
-    wire [31:0] q3;  
+    wire [31:0] q3;
+    //index to clear IW instruction  
+    wire wbIndex0;
+    wire wbIndex1;
+    wire wbIndex2;
 
     /*read*/
     wire [`REG_ADR-1:0] operandAddr1;
@@ -29,6 +33,10 @@ module cpu_pipe(
     wire [`D_SIZE-1:0] operandValue1;
     wire [`D_SIZE-1:0] operandValue2;
     
+    /*data forwarding*/
+    wire [`REG_ADR-1:0] src;
+    wire [`D_SIZE-1:0] res;
+    wire readyForward;
     
     /*execute and read stage*/
     wire [`D_SIZE-1:0]RRop1;
@@ -45,6 +53,7 @@ module cpu_pipe(
     wire memRd;
     wire loadMem;
     wire loadEnable;
+    wire enableWb; /*enable wb on regfile*/
     
     /*write back and executes outputs*/
     wire [`REG_ADR-1:0] wb_regAddr;
@@ -71,7 +80,10 @@ module cpu_pipe(
         .q1w(q1),
         .q2w(q2),
         .q3w(q3),
-        .stall(stallFetch)
+        .stall(stallFetch),
+        .pc_wr_enable(pc_wr_enable),
+        .wbIndex(wbIndex2)
+        
     );
 
 
@@ -94,7 +106,12 @@ module cpu_pipe(
         .RRop1(RRop1),
         .RRop2(RRop2),
         .RRdest(RRdest),
-        .RRopcode(RRopcode)
+        .RRopcode(RRopcode),
+        .wbIndexOut(wbIndex0),
+        /*data forwarding*/
+        .src(src),
+        .res(res),
+        .readyForward(readyForward)
     );
 
 
@@ -107,7 +124,8 @@ module cpu_pipe(
         .operandAddr2(operandAddr2),
         // write-back
         .regAddress(wb_regAddr),
-        .regValue(wb_regValue)
+        .regValue(wb_regValue),
+        .enableWb(enableWb)
     );
     
     /*add jump pc instruction*/
@@ -121,7 +139,9 @@ module cpu_pipe(
         .RRop2(RRop2),
         .RRdest(RRdest),
         .RRopcode(RRopcode),
+        .wbIndexIn(wbIndex0),
         //pipeline output
+        .wbIndexOut(wbIndex1),
         .dataOut(dataOut),
         .dataDest(dataDest),
         .loadMem(loadMem),/*sequential to the wb*/
@@ -133,7 +153,12 @@ module cpu_pipe(
         .jmpPC(jmpPC),
         .flush(flush),/*sent from execute stage to fetch and read*/
         .stall(stall),/*sent from execute stage to fetch and read*/
-        .pc_wr_enable(pc_wr_enable)
+        .pc_wr_enable(pc_wr_enable),
+        /*data forwarding*/
+        .src(src),
+        .res(res),
+        .readyForward(readyForward)
+
     );
     
     
@@ -154,11 +179,14 @@ module cpu_pipe(
        .loadEnable(loadEnable),
        .dataInMem(dataOutMem),
        /*data from pipeline reg*/
+       .wbIndexIn(wbIndex1),
+       .wbIndexOut(wbIndex2),
        .dataIn(dataOut),
        .dataDest(dataDest),
        /*registers*/
        .regAddress(wb_regAddr),
-       .regValue(wb_regValue) 
+       .regValue(wb_regValue),
+       .enableWb(enableWb) 
     );
     
     

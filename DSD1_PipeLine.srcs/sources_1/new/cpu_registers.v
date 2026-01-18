@@ -10,7 +10,8 @@ module cpu_registers(
     input [`REG_ADR-1:0]operandAddr2,
     /*signals from the write back stage*/
     input [`REG_ADR-1:0]regAddress, /*destination*/
-    input [`D_SIZE-1:0]regValue /*result*/
+    input [`D_SIZE-1:0]regValue, /*result*/
+    input enableWb
 );
 
 /*defines registers memory*/
@@ -32,7 +33,7 @@ end
 
 /*sequential writing write back stage*/
 always@(posedge clk) begin
-    REG[regAddress] <= regValue;
+    if(enableWb == 1) REG[regAddress] <= regValue;
 end
 
 
