@@ -5,11 +5,13 @@ module cpu_pipe(
     input wire clk,
     input wire rst
 );
-
     /*wire to connect all the modules*/
     wire flush;
     wire stall;
     wire stallFetch;
+    
+    /*NEW: semnal de confirmare ca branch-ul a fost procesat in EX*/
+    wire branch_processed; 
 
     /*fetch*/
     wire [`INSTR_SIZE-1:0] IR;
@@ -22,10 +24,12 @@ module cpu_pipe(
     wire [31:0] q1;
     wire [31:0] q2;
     wire [31:0] q3;
-    //index to clear IW instruction  
-    wire wbIndex0;
-    wire wbIndex1;
-    wire wbIndex2;
+    
+    /*index to clear IW instruction*/
+    wire [7:0] wbIndex0;
+    wire [7:0] wbIndex1;
+    wire [7:0] wbIndex2;
+    wire [7:0] readIndex;
 
     /*read*/
     wire [`REG_ADR-1:0] operandAddr1;
@@ -45,7 +49,8 @@ module cpu_pipe(
     wire [`OPCODE_SIZE-1:0]RRopcode;
     wire [`D_SIZE-1:0]dataOut;
     wire [`REG_ADR-1:0]dataDest;
-    //datamemory signals
+    
+    /*datamemory signals*/
     wire [`A_SIZE-1:0]addrMem;
     wire [`D_SIZE-1:0] dataInMem;
     wire [`D_SIZE-1:0]dataOutMem;
@@ -70,11 +75,12 @@ module cpu_pipe(
         .PC(PC),
         .IR(IR)
     );
-    
-    
+
     IW IW (
         .clk(clk),
         .rst(rst),
+        .flush(flush), /*NEW: flush curata coada si stall-ul*/
+        .branch_processed_ex(branch_processed), /*NEW: confirmare de la EX*/
         .IR(IR),
         .q0w(q0),
         .q1w(q1),
@@ -82,8 +88,8 @@ module cpu_pipe(
         .q3w(q3),
         .stall(stallFetch),
         .pc_wr_enable(pc_wr_enable),
-        .wbIndex(wbIndex2)
-        
+        .wbIndex(wbIndex2),
+        .readIndex(readIndex) 
     );
 
 
@@ -102,66 +108,64 @@ module cpu_pipe(
         .operandValue1(operandValue1),
         .operandAddr2(operandAddr2),
         .operandValue2(operandValue2),
-        // pipeline outputs
+        /*pipeline outputs*/
         .RRop1(RRop1),
         .RRop2(RRop2),
         .RRdest(RRdest),
         .RRopcode(RRopcode),
         .wbIndexOut(wbIndex0),
+        .readIndexOut(readIndex), 
         /*data forwarding*/
         .src(src),
         .res(res),
         .readyForward(readyForward)
     );
 
-
     cpu_registers REGFILE (
         .clk(clk),
-        // read
+        /*read*/
         .operandValue1(operandValue1),
         .operandAddr1(operandAddr1),
         .operandValue2(operandValue2),
         .operandAddr2(operandAddr2),
-        // write-back
+        /*write-back*/
         .regAddress(wb_regAddr),
         .regValue(wb_regValue),
         .enableWb(enableWb)
     );
-    
-    /*add jump pc instruction*/
+
     execute_stage EXECUTE (
         .clk(clk),
-        //memory connections
+        /*memory connections*/
         .memWr(memWr),
         .memRd(memRd),
-        //pipeline inputs from read
+        /*pipeline inputs from read*/
         .RRop1(RRop1),
         .RRop2(RRop2),
         .RRdest(RRdest),
         .RRopcode(RRopcode),
         .wbIndexIn(wbIndex0),
-        //pipeline output
+        /*pipeline output*/
         .wbIndexOut(wbIndex1),
         .dataOut(dataOut),
         .dataDest(dataDest),
-        .loadMem(loadMem),/*sequential to the wb*/
+        .loadMem(loadMem),
         .loadEnable(loadEnable),
-        //memory output signals
+        /*memory output signals*/
         .addrMem(addrMem),
         .dataMem(dataInMem),
-        //jmp signals to the fetch
+        /*jmp signals to the fetch*/
         .jmpPC(jmpPC),
-        .flush(flush),/*sent from execute stage to fetch and read*/
-        .stall(stall),/*sent from execute stage to fetch and read*/
+        .flush(flush),
+        .stall(stall),
         .pc_wr_enable(pc_wr_enable),
+        .branch_done(branch_processed), /*NEW: output signal*/
         /*data forwarding*/
         .src(src),
         .res(res),
         .readyForward(readyForward)
-
     );
-    
-    
+
     data_memory DATAMEM (
         /*data memory connected to the Wb and Execute states*/
         .clk(clk),
@@ -171,8 +175,7 @@ module cpu_pipe(
         .dataMemDatain(dataInMem),
         .dataMemDataout(dataOutMem)
     );
-    
-    
+
     write_back_stage WRITEBACK (
        /*data from data memory*/
        .loadMem(loadMem),
@@ -188,8 +191,5 @@ module cpu_pipe(
        .regValue(wb_regValue),
        .enableWb(enableWb) 
     );
-    
-    
-
 
 endmodule

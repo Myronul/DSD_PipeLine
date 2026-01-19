@@ -20,21 +20,21 @@ integer i = 0;
 
 initial begin
     for(i=0;i<8;i=i+1) begin
-        REG[i] = 32'h00000000;
+        REG[i] = 16'h0000;
     end
 end
 
 always@(*) begin
-    /*read stage*/
+    /*read stage - combinational read*/
     operandValue1 = REG[operandAddr1];
     operandValue2 = REG[operandAddr2];    
 end
 
-
 /*sequential writing write back stage*/
 always@(posedge clk) begin
-    if(enableWb == 1) REG[regAddress] <= regValue;
+    if(enableWb == 1) begin
+        REG[regAddress] <= regValue;
+    end
 end
-
 
 endmodule
