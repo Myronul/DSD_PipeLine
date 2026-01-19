@@ -1,6 +1,5 @@
 # compile verilog/system verilog design source files
 verilog xil_defaultlib  --include "../../../../DSD1_PipeLine.srcs/sources_1/new" \
-"../../../../DSD1_PipeLine.srcs/sources_1/new/IW.v" \
 "../../../../DSD1_PipeLine.srcs/sources_1/new/cpu_pipe.v" \
 "../../../../DSD1_PipeLine.srcs/sources_1/new/cpu_registers.v" \
 "../../../../DSD1_PipeLine.srcs/sources_1/new/data_memory.v" \
