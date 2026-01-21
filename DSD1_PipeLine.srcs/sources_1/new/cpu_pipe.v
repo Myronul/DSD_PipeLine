@@ -42,6 +42,7 @@ module cpu_pipe(
     /*write back and executes outputs*/
     wire [`REG_ADR-1:0] wb_regAddr;
     wire [`D_SIZE-1:0] wb_regValue;
+    wire enable;
     
 
     fetch_stage FETCH (
@@ -83,7 +84,8 @@ module cpu_pipe(
         .operandAddr2(operandAddr2),
         // write-back
         .regAddress(wb_regAddr),
-        .regValue(wb_regValue)
+        .regValue(wb_regValue),
+        .enable(enable)
     );
     
     /*add jump pc instruction*/
@@ -134,7 +136,8 @@ module cpu_pipe(
        .dataDest(dataDest),
        /*registers*/
        .regAddress(wb_regAddr),
-       .regValue(wb_regValue) 
+       .regValue(wb_regValue),
+       .enable(enable)
     );
     
     

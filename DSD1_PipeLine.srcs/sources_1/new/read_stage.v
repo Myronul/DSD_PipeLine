@@ -27,6 +27,8 @@ module read_stage(
 
 always@(*) begin
 /*combinational decoder for the instruction from the IR*/
+    operandAddr1 = 0;
+    operandAddr2 = 0;
     case (IR[`FIELD_OPCODE_7])
         `AND, `ADD, `ADDF, `SUB, `SUBF,
         `OR, `XOR, `NAND, `NOR, `NXOR: begin
@@ -56,7 +58,10 @@ always@(*) begin
               `JMPRcond: begin
                operandAddr1 = IR[8:6];
                end
-               default:;
+               default: begin
+               operandAddr1 = 0;
+               operandAddr2 = 0;
+               end
           endcase
         end
       endcase

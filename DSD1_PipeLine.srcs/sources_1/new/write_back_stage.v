@@ -8,19 +8,25 @@ module write_back_stage(
     input [`D_SIZE-1:0]dataIn, /*from pipeline ex*/
     input [`REG_ADR-1:0]dataDest, /*from pipeline ex*/
     output reg [`REG_ADR-1:0] regAddress, /*data to the registers wb*/
-    output reg [`D_SIZE-1:0] regValue
+    output reg [`D_SIZE-1:0] regValue,
+    output reg enable
 );
 
 
 always@(*) begin
+    enable = 0;
+    regAddress = 0;
+    regValue = 0;
     if(loadEnable == 1) begin
         regAddress = dataDest;
         regValue = dataIn;
+        enable = 1;
     end
     
     else if(loadMem == 1) begin
          regAddress = dataDest;
          regValue = dataInMem;
+         enable = 1;
          end
 end
 

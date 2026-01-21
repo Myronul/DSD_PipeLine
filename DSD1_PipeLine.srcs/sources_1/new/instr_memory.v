@@ -10,7 +10,7 @@ reg [`INSTR_SIZE-1:0]instrMemory[0:49]; /*instruction memory A_SIZE locations ea
 integer i = 0;
 
 initial begin
-    for(i=0;i<50;i=i+1) begin
+    for(i=0;i<1024;i=i+1) begin
         instrMemory[i] = 16'h0000;
     end
 end

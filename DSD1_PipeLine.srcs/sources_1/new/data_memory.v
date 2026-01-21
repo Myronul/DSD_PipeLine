@@ -11,14 +11,14 @@ module data_memory(
     output reg [`D_SIZE-1:0]dataMemDataout
 );
 
-reg [`D_SIZE-1:0]MemData[(`A_SIZE)-1:0];
+reg [`D_SIZE-1:0]MemData[1023:0];
 
 reg [1:0]state=0;
 reg [`A_SIZE-1:0]RegAddr;
 
 integer i;
 initial begin
-for(i=0;i<(`A_SIZE);i=i+1)begin
+for(i=0;i<1024;i=i+1)begin
     MemData[i] = 0;
 end
 RegAddr = 0;
