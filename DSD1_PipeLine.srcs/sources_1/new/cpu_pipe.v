@@ -3,7 +3,9 @@
 
 module cpu_pipe(
     input wire clk,
-    input wire rst
+    input wire rst,
+    output wire [`A_SIZE-1:0] PC_cpu, /*address*/
+    input [`INSTR_SIZE-1:0] data_cpu /*instr from memory*/
 );
 
     /*wire to connect all the modules*/
@@ -44,7 +46,13 @@ module cpu_pipe(
     wire [`D_SIZE-1:0] wb_regValue;
     wire enable;
     
-
+    /*instruciton memory data*/
+    wire [`INSTR_SIZE-1:0]dataMem;
+    
+    assign PC = PC_cpu;
+    assign dataMem = data_cpu;
+     
+    
     fetch_stage FETCH (
         .clk(clk),
         .rst(rst),
@@ -53,7 +61,8 @@ module cpu_pipe(
         .flush(flush),
         .stall(stall),
         .PC(PC),
-        .IR(IR)
+        .IR(IR),
+        .instMemData(dataMem)
     );
 
 

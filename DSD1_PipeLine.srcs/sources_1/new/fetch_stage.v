@@ -12,17 +12,11 @@ module fetch_stage(
     input stall, /*stall sgn for load*/
     
     output reg [`A_SIZE-1:0] PC, /*update the PC*/
-    output reg [`INSTR_SIZE-1:0] IR /*output the instruction in the pipeline register*/   
+    output reg [`INSTR_SIZE-1:0] IR, /*output the instruction in the pipeline register*/   
+    input [`INSTR_SIZE-1:0] instMemData
 );
 
-wire [`INSTR_SIZE-1:0] instMemData;
 reg  [`INSTR_SIZE-1:0] Queue[2:0]; /*IW for the maximum 5 instructions*/
-
-/*instantiere memorie*/
-instr_memory MEM (
-    .addr(PC),
-    .dataOut(instMemData)
-);
 
 
 always @(posedge clk or posedge rst) begin
