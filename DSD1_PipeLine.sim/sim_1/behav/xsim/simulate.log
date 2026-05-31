@@ -1,2 +1,54 @@
 Vivado Simulator 2020.2
 Time resolution is 1 ps
+15000: [TB] data_memory preincarcata
+
+=== TEST 1: CMD_STOP + CMD_RESET ===
+145000: [TB] PUSH 0x02  (fifo depth=1)
+255000: RX_GOT byte=0x02
+285000: [TB] PUSH 0x01  (fifo depth=1)
+405000: RX_GOT byte=0x01
+    cpu_stop_out=1 (asteptat 1 dupa RESET)
+
+=== TEST 2: CMD_DATAMEM_READ addr=0x00001 N=1 ===
+    Asteptat: 0x12345678
+435000: [TB] PUSH 0xbb  (fifo depth=1)
+565000: RX_GOT byte=0xbb
+595000: [TB] PUSH 0x00  (fifo depth=1)
+705000: RX_GOT byte=0x00
+715000: S_DM_A2 A2=0x00 (bits 19:16)
+735000: [TB] PUSH 0x00  (fifo depth=1)
+845000: RX_GOT byte=0x00
+855000: S_DM_A1 A1=0x00 (bits 15:8)
+875000: [TB] PUSH 0x01  (fifo depth=1)
+985000: RX_GOT byte=0x01
+995000: S_DM_A0 A0=0x01 addr=0x00001
+1015000: [TB] PUSH 0x01  (fifo depth=1)
+1125000: RX_GOT byte=0x01
+1135000: S_DM_COUNT N=1
+1145000: S_DM_RD_EN dm_addr=0x00001
+1165000: S_DM_LATCH dm_data_out=0x12345678
+1265000: [TX_CAP] byte=0x12  tx_fifo depth=1
+1395000: [TX_CAP] byte=0x34  tx_fifo depth=1
+1525000: [TX_CAP] byte=0x56  tx_fifo depth=1
+1655000: [TX_CAP] byte=0x78  tx_fifo depth=1
+    Receptionat: 0x12345678  (asteptat 0x12345678)
+    PASS
+1695000: S_DM_NEXT remaining=0
+
+=== TEST 3: CMD_DATAMEM_READ addr=0x00005 N=3 ===
+2165000: [TB] PUSH 0xbb  (fifo depth=1)
+2325000: RX_GOT byte=0xbb
+2355000: [TB] PUSH 0x00  (fifo depth=1)
+2465000: RX_GOT byte=0x00
+2475000: S_DM_A2 A2=0x00 (bits 19:16)
+2495000: [TB] PUSH 0x00  (fifo depth=1)
+2605000: RX_GOT byte=0x00
+2615000: S_DM_A1 A1=0x00 (bits 15:8)
+2635000: [TB] PUSH 0x05  (fifo depth=1)
+2745000: RX_GOT byte=0x05
+2755000: S_DM_A0 A0=0x05 addr=0x00005
+2775000: [TB] PUSH 0x03  (fifo depth=1)
+2885000: RX_GOT byte=0x03
+2895000: S_DM_COUNT N=3
+2905000: S_DM_RD_EN dm_addr=0x00005
+2925000: S_DM_LATCH dm_data_out=0xaabbccdd

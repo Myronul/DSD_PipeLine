@@ -24,17 +24,23 @@
 `define CMD_RESET        8'h01   // Reset CPU (1 ciclu)
 `define CMD_STOP         8'h02   // Opreste CPU (freeze)
 `define CMD_START        8'h03   // Porneste CPU (unfreeze)
-`define CMD_WRITE        8'h04   // Scrie N cuvinte 32-bit in memorie
-`define CMD_READ         8'h05   // Citeste N cuvinte 32-bit din memorie
-`define CMD_INST_BEGIN   8'hAA   // MAGIC BYTE: incepe incarcarea instructiunilor
-//                               //   [0xAA][ADDR_HI][ADDR_LO][COUNT_HI][COUNT_LO]
-//                               //   urmat de COUNT * 2 bytes (instructiuni 16-bit, MSB first)
+`define CMD_WRITE        8'h04   // Scrie N cuvinte 32-bit in instr_memory
+`define CMD_READ         8'h05   // Citeste N cuvinte 32-bit din instr_memory
+`define CMD_INST_BEGIN   8'hAA   // MAGIC: incepe incarcarea instructiunilor
+//                               //   [0xAA][AH][AL][CH][CL] + COUNT*2 bytes
+
+`define CMD_DATAMEM_READ 8'hBB   // MAGIC: citeste N cuvinte 32-bit din data_memory
+//                               //   [0xBB][A2][A1][A0][N]
+//                               //   A2:A1:A0 = adresa 20-bit (MSB first, 3 octeti)
+//                               //   N        = numar de cuvinte 32-bit de citit
+//                               //   Raspuns: N * 4 bytes (MSB first per cuvant)
 
 // ============================================================
 // Memory / Address sizes
 // ============================================================
-`define MC_ADDR_SIZE    16      // Word-address bus width (16-bit)
-`define MC_DATA_SIZE    32      // Data word width (32-bit, upper 16 = 0 pt instructiuni)
+`define MC_ADDR_SIZE    16      // Word-address bus width instr_memory (16-bit)
+`define MC_DATA_SIZE    32      // Data word width (32-bit)
+`define DM_ADDR_SIZE    20      // data_memory address width (A_SIZE din cpu_macros)
 
 // Depth of instr_memory (2^10 = 1024 locatii de 16 biti = 2 KB)
 `define BRAM_ADDR_WIDTH 10
