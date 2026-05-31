@@ -5,7 +5,14 @@ module cpu_pipe(
     input wire clk,
     input wire rst,
     output wire [`A_SIZE-1:0] PC_cpu, /*address*/
-    input [`INSTR_SIZE-1:0] data_cpu /*instr from memory*/
+    input [`INSTR_SIZE-1:0] data_cpu, /*instr from memory*/
+
+    // External data memory interface (moved out of cpu_pipe)
+    output [`A_SIZE-1:0] addrMem,
+    output [`D_SIZE-1:0] dataInMem,
+    input  [`D_SIZE-1:0] dataOutMem,
+    output memWr,
+    output memRd
 );
 
     /*wire to connect all the modules*/
@@ -32,12 +39,7 @@ module cpu_pipe(
     wire [`OPCODE_SIZE-1:0]RRopcode;
     wire [`D_SIZE-1:0]dataOut;
     wire [`REG_ADR-1:0]dataDest;
-    //datamemory signals
-    wire [`A_SIZE-1:0]addrMem;
-    wire [`D_SIZE-1:0] dataInMem;
-    wire [`D_SIZE-1:0]dataOutMem;
-    wire memWr;
-    wire memRd;
+    // datamemory signals are ports now (external memory)
     wire loadMem;
     wire loadEnable;
     
@@ -124,15 +126,7 @@ module cpu_pipe(
     );
     
     
-    data_memory DATAMEM (
-        /*data memory connected to the Wb and Execute states*/
-        .clk(clk),
-        .memRd(memRd),
-        .memWr(memWr),
-        .dataMemAddr(addrMem),
-        .dataMemDatain(dataInMem),
-        .dataMemDataout(dataOutMem)
-    );
+    // NOTE: data_memory is instantiated externally (ModuleTop)
     
     
     write_back_stage WRITEBACK (

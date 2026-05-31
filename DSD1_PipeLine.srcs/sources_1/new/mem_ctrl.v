@@ -2,166 +2,189 @@
 `include "controller_macros.vh"
 
 // ============================================================
-//  mem_ctrl.v  -  Memory Controller
+//  mem_ctrl.v  -  Memory Controller (versiune finala)
 //
-//  This module is the AXI4-Lite MASTER that talks to the
-//  Xilinx axi_uartlite_0 slave in order to receive and send
-//  bytes over UART.
+//  Protocol (host -> MemCtrl):
+//  -------------------------------------------------------
+//  CMD_RESET      [0x01]            : Reset CPU (1 ciclu)
+//  CMD_STOP       [0x02]            : Opreste CPU
+//  CMD_START      [0x03]            : Porneste CPU
+//  CMD_WRITE      [0x04][AH][AL][N] : Scrie N cuvinte 32-bit
+//                 urmat de N*4 bytes (MSB first per word)
+//  CMD_READ       [0x05][AH][AL][N] : Citeste N cuvinte 32-bit
+//                 MemCtrl raspunde cu N*4 bytes (MSB first)
+//  CMD_INST_BEGIN [0xAA][AH][AL][CH][CL]
+//                 urmat de COUNT*2 bytes (instructiuni 16-bit)
+//                 AH:AL  = adresa de start in instr_memory
+//                 CH:CL  = numar total de instructiuni
+//                 Fiecare instructiune = 2 bytes (MSB first)
 //
-//  High-level protocol (host ? MemCtrl):
-//  ??????????????????????????????????????????????????????????
-//  RESET  : [0x01]
-//  STOP   : [0x02]
-//  START  : [0x03]
-//  WRITE  : [0x04][ADDR_HI][ADDR_LO][LEN]
-//              followed by LEN×4 bytes (MSB first per word)
-//  READ   : [0x05][ADDR_HI][ADDR_LO][LEN]
-//              MemCtrl replies with LEN×4 bytes (MSB first)
-//
-//  Addresses are 16-bit word-addresses.
-//  LEN is the number of 32-bit words (1..255).
-//
-//  Internal FSM structure:
-//  ??????????????????????????????????????????????????????????
-//   • AXI read / write sub-routines  (states 0-5)
-//   • Receive-byte sub-routine       (states 6-8)
-//   • Transmit-byte sub-routine      (states 9-11)
-//   • Protocol main states           (states 12-26)
+//  Structura FSM:
+//  -------------------------------------------------------
+//   AXI_RD_1..3      : citeste un cuvant 32-bit din UART IP
+//   AXI_WR_1..3      : scrie un cuvant 32-bit in UART IP
+//   RX_POLL/CHK/GOT  : receptioneaza 1 byte prin UART
+//   TX_CHK/EVAL/DONE : transmite 1 byte prin UART
+//   S_INIT..S_INST_DONE: stari protocol principal
 // ============================================================
-
+ 
 module mem_ctrl (
     input  wire        clk,
     input  wire        rst,
-
+ 
     // ----------------------------------------------------------
-    // AXI4-Lite Master port  (connects to axi_uartlite_0 slave)
+    // AXI4-Lite Master port (conectat la axi_uartlite_0 slave)
     // ----------------------------------------------------------
-
-    // Write address channel
     output reg  [3:0]  m_axi_awaddr,
     output reg         m_axi_awvalid,
     input  wire        m_axi_awready,
-
-    // Write data channel
+ 
     output reg  [31:0] m_axi_wdata,
     output reg  [3:0]  m_axi_wstrb,
     output reg         m_axi_wvalid,
     input  wire        m_axi_wready,
-
-    // Write response channel
+ 
     input  wire [1:0]  m_axi_bresp,
     input  wire        m_axi_bvalid,
     output reg         m_axi_bready,
-
-    // Read address channel
+ 
     output reg  [3:0]  m_axi_araddr,
     output reg         m_axi_arvalid,
     input  wire        m_axi_arready,
-
-    // Read data channel
+ 
     input  wire [31:0] m_axi_rdata,
     input  wire [1:0]  m_axi_rresp,
     input  wire        m_axi_rvalid,
     output reg         m_axi_rready,
-
+ 
     // ----------------------------------------------------------
-    // Shared BRAM interface  (to bram_mem Port A / read-back)
+    // Interfata memorie de instructiuni
     // ----------------------------------------------------------
-    output reg  [`MC_ADDR_SIZE-1:0] mem_addr,    // word address
-    output reg  [`MC_DATA_SIZE-1:0] mem_data_in, // data to write
-    input  wire [`MC_DATA_SIZE-1:0] mem_data_out,// data read back
-    output reg  mem_we,                          // write enable
-
+    output       [`MC_ADDR_SIZE-1:0] mem_addr,
+    output       [`MC_DATA_SIZE-1:0] mem_data_in,
+    input  wire  [`MC_DATA_SIZE-1:0] mem_data_out,
+    output       mem_we,
+ 
     // ----------------------------------------------------------
-    // CPU control  (to cpu_pipe / fetch_stage)
+    // Control CPU
     // ----------------------------------------------------------
-    output reg  cpu_rst_out,   // synchronous reset pulse (1 cycle)
-    output reg  cpu_stop_out   // when high: CPU pipeline is frozen
+    output reg  cpu_rst_out,
+    output reg  cpu_stop_out,
+ 
+    // Iesiri de monitorizare (optional, pot fi lasate neconectate)
+    output reg [`MC_ADDR_SIZE-1:0] cur_addr_out,
+    output reg [`MC_ADDR_SIZE-1:0] start_addr_out,
+    output reg [7:0]               offset_out
 );
-
+ 
     // ==========================================================
-    // STATE ENCODING
+    // CODIFICARE STARI
     // ==========================================================
-
-    // ---- AXI Read transaction (shared sub-routine) -----------
-    // Entry conditions: axi_addr_latch = UART register address
-    //                   axi_ret        = state to return to
-    localparam AXI_RD_1   = 5'd0;  // assert ARVALID
-    localparam AXI_RD_2   = 5'd1;  // wait for ARREADY + RVALID
-    localparam AXI_RD_3   = 5'd2;  // clear RREADY, jump to axi_ret
-
-    // ---- AXI Write transaction (shared sub-routine) ----------
-    // Entry conditions: axi_addr_latch  = UART register address
-    //                   axi_wdata_latch = 32-bit write data
-    //                   axi_ret         = state to return to
-    localparam AXI_WR_1   = 5'd3;  // assert AWVALID + WVALID
-    localparam AXI_WR_2   = 5'd4;  // wait for AWREADY, WREADY, BVALID
-    localparam AXI_WR_3   = 5'd5;  // clear BREADY, jump to axi_ret
-
-    // ---- Receive-byte sub-routine ----------------------------
-    // Entry condition: byte_ret = caller return state
-    // Exit:            rx_byte holds the received byte
-    localparam RX_POLL    = 5'd6;  // read UART status register
-    localparam RX_CHK     = 5'd7;  // check RXVALID; loop or read FIFO
-    localparam RX_GOT     = 5'd8;  // save byte ? jump to byte_ret
-
-    // ---- Transmit-byte sub-routine ---------------------------
-    // Entry condition: tx_byte = byte to send
-    //                  tx_ret  = caller return state
-    localparam TX_CHK     = 5'd9;  // read UART status register
-    localparam TX_EVAL    = 5'd10; // check TXFULL; loop or write FIFO
-    localparam TX_DONE    = 5'd11; // byte sent ? jump to tx_ret
-
+ 
+    // ---- AXI Read sub-rutina ---------------------------------
+    localparam AXI_RD_1   = 6'd0;
+    localparam AXI_RD_2   = 6'd1;
+    localparam AXI_RD_3   = 6'd2;
+ 
+    // ---- AXI Write sub-rutina --------------------------------
+    localparam AXI_WR_1   = 6'd3;
+    localparam AXI_WR_2   = 6'd4;
+    localparam AXI_WR_3   = 6'd5;
+ 
+    // ---- Receive-byte sub-rutina ----------------------------
+    localparam RX_POLL    = 6'd6;
+    localparam RX_CHK     = 6'd7;
+    localparam RX_GOT     = 6'd8;
+ 
+    // ---- Transmit-byte sub-rutina ---------------------------
+    localparam TX_CHK     = 6'd9;
+    localparam TX_EVAL    = 6'd10;
+    localparam TX_DONE    = 6'd11;
+ 
     // ---- Protocol main states --------------------------------
-    localparam S_INIT       = 5'd12; // one-time initialisation
-    localparam S_WAIT_CMD   = 5'd13; // wait for next command byte
-    localparam S_DECODE     = 5'd14; // decode the received command
-    localparam S_EXEC_RST   = 5'd15; // pulse cpu_rst for 1 cycle
-    localparam S_STORE_AH   = 5'd16; // save address high byte
-    localparam S_STORE_AL   = 5'd17; // save address low  byte
-    localparam S_STORE_LEN  = 5'd18; // save length byte
-    localparam S_STORE_DATA = 5'd19; // accumulate incoming data bytes
-    localparam S_WRITE_MEM  = 5'd20; // write assembled word to BRAM
-    localparam S_WRITE_DONE = 5'd21; // advance address/counter
-    localparam S_READ_MEM   = 5'd22; // request BRAM read (set addr)
-    localparam S_READ_LATCH = 5'd23; // capture BRAM output (1-cyc lat)
-    localparam S_SEND_BYTE  = 5'd24; // load tx_byte from data_buf
-    localparam S_SENT_BYTE  = 5'd25; // after TX: advance byte_pos
-    localparam S_NEXT_WORD  = 5'd26; // after 4 bytes: advance word
-
+    localparam S_INIT        = 6'd12;
+    localparam S_WAIT_CMD    = 6'd13;
+    localparam S_DECODE      = 6'd14;
+    localparam S_EXEC_RST    = 6'd15;
+    localparam S_STORE_AH    = 6'd16;
+    localparam S_STORE_AL    = 6'd17;
+    localparam S_STORE_LEN   = 6'd18;
+    localparam S_STORE_DATA  = 6'd19;
+    localparam S_WRITE_MEM   = 6'd20;
+    localparam S_WRITE_DONE  = 6'd21;
+    localparam S_READ_MEM    = 6'd22;
+    localparam S_READ_LATCH  = 6'd23;
+    localparam S_SEND_BYTE   = 6'd24;
+    localparam S_SENT_BYTE   = 6'd25;
+    localparam S_NEXT_WORD   = 6'd26;
+    // --- INST_BEGIN FSM states ---
+    localparam S_INST_AH     = 6'd27;  // primeste ADDR_HI
+    localparam S_INST_AL     = 6'd28;  // primeste ADDR_LO
+    localparam S_INST_CNT_H  = 6'd29;  // primeste COUNT_HI
+    localparam S_INST_CNT_L  = 6'd30;  // primeste COUNT_LO
+    localparam S_INST_RX_B1  = 6'd31;  // primeste byte MSB al instructiunii
+    localparam S_INST_RX_B2  = 6'd32;  // primeste byte LSB al instructiunii
+    localparam S_INST_WRITE  = 6'd33;  // scrie instructiunea in memorie (wr_en=1)
+    localparam S_INST_DONE   = 6'd34;  // dezactiveaza wr_en, avanseaza pointerul
+ 
     // ==========================================================
-    // REGISTERS
+    // REGISTRE INTERNE
     // ==========================================================
-
-    reg [4:0]  state;
-
-    // Sub-routine return-state registers
-    reg [4:0]  axi_ret;       // where AXI sub-routine returns
-    reg [4:0]  byte_ret;      // where receive-byte sub-routine returns
-    reg [4:0]  tx_ret;        // where transmit-byte sub-routine returns
-
-    // AXI helper registers
+ 
+    // Registre care duc porturile de memorie (vizibile combinational)
+    reg [`MC_ADDR_SIZE-1:0] mem_addr_reg;
+    reg [`MC_DATA_SIZE-1:0] mem_data_in_reg;
+    reg                     mem_we_reg;
+ 
+    assign mem_addr    = mem_addr_reg;
+    assign mem_data_in = mem_data_in_reg;
+    assign mem_we      = mem_we_reg;
+ 
+    reg [5:0]  state;
+ 
+    // Registre de return pentru sub-rutine (call/return pattern)
+    reg [5:0]  axi_ret;      // unde se intoarce dupa AXI_RD/WR
+    reg [5:0]  byte_ret;     // unde se intoarce dupa RX_POLL/GOT
+    reg [5:0]  tx_ret;       // unde se intoarce dupa TX_*
+ 
+    // Registre helper AXI
     reg [3:0]  axi_addr_latch;
     reg [31:0] axi_wdata_latch;
-    reg [31:0] axi_rdata_latch;  // captured read data
-
-    // Protocol working registers
-    reg [7:0]  rx_byte;       // most recently received UART byte
-    reg [7:0]  tx_byte;       // byte being transmitted to UART
-    reg [7:0]  cur_cmd;       // CMD_WRITE or CMD_READ in progress
-    reg [15:0] cur_addr;      // current word address in BRAM
-    reg [7:0]  word_count;    // remaining words to process
-    reg [1:0]  byte_pos;      // byte index: 3 = MSB, 0 = LSB
-    reg [31:0] data_buf;      // 32-bit assembly / disassembly buffer
-
+    reg [31:0] axi_rdata_latch;
+ 
+    // Registre protocol
+    reg [7:0]  rx_byte;
+    reg [7:0]  tx_byte;
+    reg [7:0]  cur_cmd;
+ 
+    // Adresa curenta de lucru (avansata la fiecare instructiune/cuvant scris)
+    reg [15:0] cur_addr;
+    // Adresa de start salvata (pentru readback offset)
+    reg [15:0] start_addr_reg;
+    // Offset de la start (pentru monitorizare)
+    reg [7:0]  offset_reg;
+ 
+    // Numar de instructiuni ramase (COUNT decrementat)
+    // FIX: separam HIGH si LOW in registre distincte pentru a evita
+    // problema non-blocking assignment la concatenare
+    reg [7:0]  instr_cnt_h;  // byte HIGH al numarului de instructiuni
+    reg [15:0] instr_count;  // contorul complet (setat corect in S_INST_CNT_L)
+ 
+    // Buffer instructiune curenta (2 bytes, asamblata MSB first)
+    reg [15:0] instr_buf;
+ 
+    // CMD_WRITE / CMD_READ
+    reg [7:0]  word_count;
+    reg [1:0]  byte_pos;
+    reg [31:0] data_buf;
+ 
     // ==========================================================
-    // MAIN FSM  (single synchronous always block)
+    // FSM PRINCIPAL (always block sincron)
     // ==========================================================
     always @(posedge clk or posedge rst) begin
-
+ 
         if (rst) begin
             state           <= S_INIT;
-            // AXI outputs
             m_axi_awaddr    <= 4'h0;
             m_axi_awvalid   <= 1'b0;
             m_axi_wdata     <= 32'h0;
@@ -171,70 +194,69 @@ module mem_ctrl (
             m_axi_araddr    <= 4'h0;
             m_axi_arvalid   <= 1'b0;
             m_axi_rready    <= 1'b0;
-            // Memory
-            mem_addr        <= {`MC_ADDR_SIZE{1'b0}};
-            mem_data_in     <= {`MC_DATA_SIZE{1'b0}};
-            mem_we          <= 1'b0;
-            // CPU
+            mem_addr_reg    <= {`MC_ADDR_SIZE{1'b0}};
+            mem_data_in_reg <= {`MC_DATA_SIZE{1'b0}};
+            mem_we_reg      <= 1'b0;
             cpu_rst_out     <= 1'b0;
-            cpu_stop_out    <= 1'b1;  // CPU starts in stopped state
-            // Internal
+            cpu_stop_out    <= 1'b1;
             rx_byte         <= 8'h0;
             tx_byte         <= 8'h0;
             cur_cmd         <= 8'h0;
             cur_addr        <= 16'h0;
+            start_addr_reg  <= 16'h0;
+            offset_reg      <= 8'h0;
+            instr_cnt_h     <= 8'h0;
+            instr_count     <= 16'h0;
+            instr_buf       <= 16'h0;
             word_count      <= 8'h0;
             byte_pos        <= 2'h0;
             data_buf        <= 32'h0;
             axi_addr_latch  <= 4'h0;
             axi_wdata_latch <= 32'h0;
             axi_rdata_latch <= 32'h0;
+            cur_addr_out    <= {`MC_ADDR_SIZE{1'b0}};
+            start_addr_out  <= {`MC_ADDR_SIZE{1'b0}};
+            offset_out      <= 8'h0;
         end
-
+ 
         else begin
             case (state)
-
+ 
             // ======================================================
             //  AXI READ TRANSACTION
-            //  Reads one 32-bit word from the UART register given
-            //  in axi_addr_latch and stores it in axi_rdata_latch.
-            //  Returns to axi_ret when done.
+            //  Citeste un reg 32-bit de la adresa axi_addr_latch.
+            //  Rezultatul e in axi_rdata_latch. Return: axi_ret.
             // ======================================================
-
+ 
             AXI_RD_1: begin
-                // Send read address to slave
                 m_axi_araddr  <= axi_addr_latch;
                 m_axi_arvalid <= 1'b1;
                 state         <= AXI_RD_2;
             end
-
+ 
             AXI_RD_2: begin
-                // Deassert address valid once slave accepted it
                 if (m_axi_arready)
                     m_axi_arvalid <= 1'b0;
-
-                // Capture data when slave presents it
                 if (m_axi_rvalid) begin
                     axi_rdata_latch <= m_axi_rdata;
                     m_axi_rready    <= 1'b1;
-                    m_axi_arvalid   <= 1'b0;  // safe to clear if not yet
+                    m_axi_arvalid   <= 1'b0;
                     state           <= AXI_RD_3;
                 end
             end
-
+ 
             AXI_RD_3: begin
                 m_axi_rready <= 1'b0;
-                state        <= axi_ret;     // return to caller
+                state        <= axi_ret;
             end
-
+ 
             // ======================================================
             //  AXI WRITE TRANSACTION
-            //  Writes axi_wdata_latch to the register at
-            //  axi_addr_latch.  Returns to axi_ret when done.
+            //  Scrie axi_wdata_latch la adresa axi_addr_latch.
+            //  Return: axi_ret.
             // ======================================================
-
+ 
             AXI_WR_1: begin
-                // Send address and data simultaneously (legal in AXI4-Lite)
                 m_axi_awaddr  <= axi_addr_latch;
                 m_axi_awvalid <= 1'b1;
                 m_axi_wdata   <= axi_wdata_latch;
@@ -242,13 +264,10 @@ module mem_ctrl (
                 m_axi_wvalid  <= 1'b1;
                 state         <= AXI_WR_2;
             end
-
+ 
             AXI_WR_2: begin
-                // Deassert each valid when the corresponding ready is seen
                 if (m_axi_awready) m_axi_awvalid <= 1'b0;
                 if (m_axi_wready)  m_axi_wvalid  <= 1'b0;
-
-                // Wait for write response (BRESP)
                 if (m_axi_bvalid) begin
                     m_axi_bready  <= 1'b1;
                     m_axi_awvalid <= 1'b0;
@@ -256,257 +275,372 @@ module mem_ctrl (
                     state         <= AXI_WR_3;
                 end
             end
-
+ 
             AXI_WR_3: begin
                 m_axi_bready <= 1'b0;
-                state        <= axi_ret;     // return to caller
+                state        <= axi_ret;
             end
-
+ 
             // ======================================================
-            //  RECEIVE BYTE SUB-ROUTINE
-            //  Polls the UART status register until RXVALID=1,
-            //  then reads one byte from the RX FIFO.
-            //  Result is in rx_byte; resumes at byte_ret.
+            //  SUB-RUTINA RECEIVE BYTE (RX_POLL -> RX_CHK -> RX_GOT)
+            //  Polleaza UART_STAT_REG pana RXVALID=1, apoi citeste
+            //  un byte din RX FIFO. Rezultat in rx_byte.
+            //  Return: byte_ret.
             // ======================================================
-
+ 
             RX_POLL: begin
-                // Issue AXI read of UART status register
                 axi_addr_latch <= `UART_STAT_REG;
                 axi_ret        <= RX_CHK;
                 state          <= AXI_RD_1;
             end
-
+ 
             RX_CHK: begin
                 if (axi_rdata_latch[`UART_RXVALID]) begin
-                    // Data available: read the RX FIFO
                     axi_addr_latch <= `UART_RX_FIFO;
                     axi_ret        <= RX_GOT;
                     state          <= AXI_RD_1;
                 end else begin
-                    // No data yet: poll again
-                    state <= RX_POLL;
+                    state <= RX_POLL;   // nu e nimic in FIFO, reincercam
                 end
             end
-
+ 
             RX_GOT: begin
-                // Save the received byte and return to caller
                 rx_byte <= axi_rdata_latch[7:0];
+                $display("%0t: RX_GOT byte=0x%02h", $time, axi_rdata_latch[7:0]);
                 state   <= byte_ret;
             end
-
+ 
             // ======================================================
-            //  TRANSMIT BYTE SUB-ROUTINE
-            //  Polls until TX FIFO is not full, then sends tx_byte.
-            //  Resumes at tx_ret.
+            //  SUB-RUTINA TRANSMIT BYTE (TX_CHK -> TX_EVAL -> TX_DONE)
+            //  Polleaza pana TX FIFO nu e plin, apoi scrie tx_byte.
+            //  Return: tx_ret.
             // ======================================================
-
+ 
             TX_CHK: begin
-                // Issue AXI read of UART status register
                 axi_addr_latch <= `UART_STAT_REG;
                 axi_ret        <= TX_EVAL;
                 state          <= AXI_RD_1;
             end
-
+ 
             TX_EVAL: begin
                 if (!axi_rdata_latch[`UART_TXFULL]) begin
-                    // TX FIFO has space: write byte to TX FIFO
                     axi_addr_latch  <= `UART_TX_FIFO;
-                    axi_wdata_latch <= {24'h0, tx_byte}; // only [7:0] used
+                    axi_wdata_latch <= {24'h0, tx_byte};
                     axi_ret         <= TX_DONE;
                     state           <= AXI_WR_1;
                 end else begin
-                    // TX FIFO full: wait and retry
                     state <= TX_CHK;
                 end
             end
-
+ 
             TX_DONE: begin
-                state <= tx_ret;    // return to caller
+                state <= tx_ret;
             end
-
+ 
             // ======================================================
-            //  PROTOCOL: INITIALISATION
+            //  INITIALIZARE
             // ======================================================
-
+ 
             S_INIT: begin
                 cpu_rst_out  <= 1'b0;
-                cpu_stop_out <= 1'b1;   // keep CPU frozen at power-on
-                mem_we       <= 1'b0;
+                cpu_stop_out <= 1'b1;   // CPU oprit la pornire
+                mem_we_reg   <= 1'b0;
                 state        <= S_WAIT_CMD;
             end
-
+ 
             // ======================================================
-            //  PROTOCOL: WAIT FOR NEXT COMMAND BYTE
+            //  ASTEPTARE COMANDA
+            //  Starea de idle: asteapta primul byte (codul comenzii)
             // ======================================================
-
+ 
             S_WAIT_CMD: begin
-                cpu_rst_out <= 1'b0;    // clear any previous reset pulse
-                mem_we      <= 1'b0;
+                cpu_rst_out <= 1'b0;
+                mem_we_reg  <= 1'b0;    // asiguram wr_en=0 in idle
                 byte_ret    <= S_DECODE;
                 state       <= RX_POLL;
             end
-
+ 
             // ======================================================
-            //  PROTOCOL: DECODE COMMAND BYTE
-            //  rx_byte contains the received command.
+            //  DECODARE COMANDA
             // ======================================================
-
+ 
             S_DECODE: begin
                 cur_cmd <= rx_byte;
                 case (rx_byte)
-
+ 
                     `CMD_RESET: begin
-                        // Pulse cpu_rst for exactly 1 clock cycle
                         state <= S_EXEC_RST;
                     end
-
+ 
                     `CMD_STOP: begin
                         cpu_stop_out <= 1'b1;
                         state        <= S_WAIT_CMD;
                     end
-
+ 
                     `CMD_START: begin
                         cpu_stop_out <= 1'b0;
                         state        <= S_WAIT_CMD;
                     end
-
+ 
                     `CMD_WRITE: begin
-                        // Next: receive 2-byte address then 1-byte length
                         byte_ret <= S_STORE_AH;
                         state    <= RX_POLL;
                     end
-
+ 
                     `CMD_READ: begin
                         byte_ret <= S_STORE_AH;
                         state    <= RX_POLL;
                     end
-
+ 
+                    // --------------------------------------------------
+                    // CMD_INST_BEGIN = 0xAA
+                    // Urmeaza: [ADDR_HI][ADDR_LO][COUNT_HI][COUNT_LO]
+                    // Apoi COUNT * 2 bytes de instructiuni (MSB first)
+                    // --------------------------------------------------
+                    `CMD_INST_BEGIN: begin
+                        byte_ret <= S_INST_AH;
+                        state    <= RX_POLL;
+                    end
+ 
                     default: begin
-                        // Unknown command: ignore and wait for next
                         state <= S_WAIT_CMD;
                     end
-
+ 
                 endcase
             end
-
+ 
             // ======================================================
-            //  PROTOCOL: EXECUTE RESET
-            //  Assert cpu_rst_out for exactly 1 clock cycle.
-            //  The CPU sees the reset on the NEXT rising edge.
+            //  RESET CPU
             // ======================================================
-
+ 
             S_EXEC_RST: begin
                 cpu_rst_out  <= 1'b1;
-                cpu_stop_out <= 1'b1;   // keep stopped after reset
-                // cpu_rst_out will be cleared when we return to S_WAIT_CMD
-                state <= S_WAIT_CMD;
+                cpu_stop_out <= 1'b1;
+                state        <= S_WAIT_CMD;
             end
-
+ 
             // ======================================================
-            //  PROTOCOL: RECEIVE ADDRESS AND LENGTH
-            //  Shared by both CMD_WRITE and CMD_READ.
+            //  CMD_WRITE / CMD_READ - primire adresa si lungime
             // ======================================================
-
+ 
             S_STORE_AH: begin
-                // rx_byte = address[15:8]
                 cur_addr[15:8] <= rx_byte;
                 byte_ret       <= S_STORE_AL;
                 state          <= RX_POLL;
             end
-
+ 
             S_STORE_AL: begin
-                // rx_byte = address[7:0]
                 cur_addr[7:0] <= rx_byte;
                 byte_ret      <= S_STORE_LEN;
                 state         <= RX_POLL;
             end
-
+ 
             S_STORE_LEN: begin
-                // rx_byte = number of 32-bit words
-                word_count <= rx_byte;
+                word_count     <= rx_byte;
+                start_addr_reg <= cur_addr;
+                offset_reg     <= 8'h0;
+                start_addr_out <= cur_addr;
+                offset_out     <= 8'h0;
                 if (cur_cmd == `CMD_WRITE) begin
-                    // Start receiving data bytes; byte_pos=3 means MSB first
                     byte_pos <= 2'd3;
                     byte_ret <= S_STORE_DATA;
                     state    <= RX_POLL;
                 end else begin
-                    // CMD_READ: go directly to memory read
                     state <= S_READ_MEM;
                 end
             end
-
+ 
             // ======================================================
-            //  PROTOCOL: WRITE  -  receive bytes, assemble, write mem
-            //  4 bytes arrive MSB first and are packed into data_buf.
-            //  When all 4 bytes are received, write data_buf to BRAM.
+            //  ============  INST_BEGIN FSM  ============
+            //
+            //  Flux complet:
+            //    S_DECODE[0xAA] -> RX_POLL -> S_INST_AH
+            //                   -> RX_POLL -> S_INST_AL
+            //                   -> RX_POLL -> S_INST_CNT_H
+            //                   -> RX_POLL -> S_INST_CNT_L
+            //                   -> [S_INST_RX_B1 -> RX_POLL -> S_INST_RX_B2
+            //                       -> S_INST_WRITE -> S_INST_DONE] x COUNT
+            //                   -> S_WAIT_CMD
+            //
+            //  Adresare: cur_addr porneste de la ADDR (16-bit word addr)
+            //  si se incrementeaza cu +1 dupa fiecare instructiune scrisa.
+            //  instr_memory e indexata word cu word (fiecare locatie = 16 biti).
             // ======================================================
-
+ 
+            // --- Primeste ADDR_HI ---
+            S_INST_AH: begin
+                cur_addr[15:8] <= rx_byte;
+                byte_ret       <= S_INST_AL;
+                state          <= RX_POLL;
+                $display("%0t: S_INST_AH ADDR_HI=0x%02h", $time, rx_byte);
+            end
+ 
+            // --- Primeste ADDR_LO ---
+            // FIX CRITIC: byte_ret trebuie sa fie S_INST_CNT_H, NU S_WAIT_CMD!
+            // Dupa ce avem adresa completa, mergem direct la citirea COUNT.
+            S_INST_AL: begin
+                // cur_addr[15:8] a fost deja latched in ciclul anterior
+                cur_addr[7:0]  <= rx_byte;
+                // Salvam adresa de start (construita din bytes deja latched)
+                start_addr_reg <= {cur_addr[15:8], rx_byte};
+                offset_reg     <= 8'h0;
+                start_addr_out <= {cur_addr[15:8], rx_byte};
+                cur_addr_out   <= {cur_addr[15:8], rx_byte};
+                // CONTINUAM cu citirea COUNT (NU ne intoarcem in S_WAIT_CMD!)
+                byte_ret       <= S_INST_CNT_H;
+                state          <= RX_POLL;
+                $display("%0t: S_INST_AL ADDR_LO=0x%02h start_addr=0x%04h",
+                         $time, rx_byte, {cur_addr[15:8], rx_byte});
+            end
+ 
+            // --- Primeste COUNT_HI ---
+            // FIX: Salvam in registru separat (instr_cnt_h) pentru a evita
+            // problema non-blocking la concatenare in S_INST_CNT_L.
+            S_INST_CNT_H: begin
+                instr_cnt_h <= rx_byte;   // salvam HIGH byte separat
+                byte_ret    <= S_INST_CNT_L;
+                state       <= RX_POLL;
+                $display("%0t: S_INST_CNT_H COUNT_HI=0x%02h", $time, rx_byte);
+            end
+ 
+            // --- Primeste COUNT_LO, formeaza COUNT complet ---
+            // FIX CRITIC: folosim instr_cnt_h (nu instr_count[15:8]) la concatenare,
+            // deoarece instr_cnt_h e deja stable (latched cu 2+ cicli in urma).
+            // Daca am folosi instr_count[15:8] ar fi valoarea DIN S_INST_CNT_H
+            // (non-blocking nu a fost aplicata inca in S_INST_CNT_H -> S_INST_CNT_L),
+            // INSA deoarece trecem prin RX_POLL intre stari, instr_count[15:8]
+            // ar fi de fapt gata. Cu instr_cnt_h eliminam orice ambiguitate.
+            S_INST_CNT_L: begin
+                instr_count <= {instr_cnt_h, rx_byte};
+                $display("%0t: S_INST_CNT_L COUNT_LO=0x%02h total_count=%0d",
+                         $time, rx_byte, {instr_cnt_h, rx_byte});
+                if ({instr_cnt_h, rx_byte} != 16'h0) begin
+                    // Avem instructiuni -> pornim receptia primei instructiuni
+                    byte_ret <= S_INST_RX_B1;
+                    state    <= RX_POLL;
+                end else begin
+                    // COUNT=0: nimic de scris, ne intoarcem la idle
+                    state <= S_WAIT_CMD;
+                end
+            end
+ 
+            // --- Primeste byte-ul MSB (HIGH) al instructiunii curente ---
+            S_INST_RX_B1: begin
+                instr_buf[15:8] <= rx_byte;
+                byte_ret        <= S_INST_RX_B2;
+                state           <= RX_POLL;
+            end
+ 
+            // --- Primeste byte-ul LSB (LOW) al instructiunii curente ---
+            // La intrare, rx_byte contine deja byte-ul LOW receptionat
+            // (FSM-ul a trecut prin RX_POLL -> RX_CHK -> RX_GOT -> S_INST_RX_B2).
+            // instr_buf[15:8] e gata din S_INST_RX_B1.
+            S_INST_RX_B2: begin
+                instr_buf[7:0] <= rx_byte;
+                // Nu mai apelam RX_POLL, mergem direct la scriere
+                state          <= S_INST_WRITE;
+            end
+ 
+            // --- Scrie instructiunea in instr_memory (wr_en=1 pentru 1 ciclu) ---
+            // FIX CRITIC: instr_buf e complet (ambii bytes latched), cur_addr e adresa
+            // corecta. Setam mem_we=1 si mergem IMEDIAT in S_INST_DONE.
+            // Fara tranzitia la S_INST_DONE, FSM-ul ar ramane blocat si mem_we
+            // ar ramane permanent HIGH.
+            S_INST_WRITE: begin
+                mem_addr_reg    <= cur_addr;
+                mem_data_in_reg <= {16'h0, instr_buf};  // upper 16 biti = 0
+                mem_we_reg      <= 1'b1;                // wr_en activ pentru 1 ciclu
+                state           <= S_INST_DONE;
+                $display("%0t: S_INST_WRITE mem_we=1 addr=0x%04h data=0x%04h",
+                         $time, cur_addr, instr_buf);
+            end
+ 
+            // --- Dezactiveaza wr_en, avanseaza pointerul, decide continuarea ---
+            S_INST_DONE: begin
+                mem_we_reg     <= 1'b0;         // dezactiveaza wr_en
+                cur_addr       <= cur_addr + 16'd1;     // urmatoarea locatie
+                offset_reg     <= offset_reg + 8'd1;
+                cur_addr_out   <= cur_addr + 16'd1;
+                start_addr_out <= start_addr_reg;
+                offset_out     <= offset_reg + 8'd1;
+ 
+                $display("%0t: S_INST_DONE wrote 0x%04h at addr=0x%04h remaining=%0d",
+                         $time, instr_buf, cur_addr, instr_count - 1);
+ 
+                if (instr_count == 16'h1) begin
+                    // Aceasta a fost ultima instructiune
+                    instr_count <= 16'h0;
+                    state       <= S_WAIT_CMD;
+                    $display("%0t: S_INST_DONE -> toate instructiunile scrise!", $time);
+                end else begin
+                    // Mai sunt instructiuni -> decrementam si citim urmatorul byte
+                    instr_count <= instr_count - 16'd1;
+                    byte_ret    <= S_INST_RX_B1;
+                    state       <= RX_POLL;
+                end
+            end
+ 
+            // ======================================================
+            //  CMD_WRITE - scriere cuvinte 32-bit in memorie
+            // ======================================================
+ 
             S_STORE_DATA: begin
-                // Store the incoming byte at the correct position
                 case (byte_pos)
                     2'd3: data_buf[31:24] <= rx_byte;
                     2'd2: data_buf[23:16] <= rx_byte;
                     2'd1: data_buf[15:8]  <= rx_byte;
                     2'd0: data_buf[7:0]   <= rx_byte;
                 endcase
-
                 if (byte_pos == 2'd0) begin
-                    // All 4 bytes assembled ? write to memory
                     state <= S_WRITE_MEM;
                 end else begin
-                    // Still more bytes for this word
                     byte_pos <= byte_pos - 2'd1;
                     byte_ret <= S_STORE_DATA;
                     state    <= RX_POLL;
                 end
             end
-
+ 
             S_WRITE_MEM: begin
-                // Drive BRAM write signals for one clock cycle
-                mem_addr    <= cur_addr;
-                mem_data_in <= data_buf;
-                mem_we      <= 1'b1;
-                state       <= S_WRITE_DONE;
+                mem_addr_reg    <= cur_addr;
+                mem_data_in_reg <= data_buf;
+                mem_we_reg      <= 1'b1;
+                state           <= S_WRITE_DONE;
             end
-
+ 
             S_WRITE_DONE: begin
-                mem_we     <= 1'b0;
-                cur_addr   <= cur_addr + 16'd1;
-                word_count <= word_count - 8'd1;
-
+                mem_we_reg     <= 1'b0;
+                cur_addr       <= cur_addr + 16'd1;
+                word_count     <= word_count - 8'd1;
+                offset_reg     <= offset_reg + 8'd1;
+                start_addr_out <= start_addr_reg;
+                cur_addr_out   <= cur_addr + 16'd1;
+                offset_out     <= offset_reg + 8'd1;
                 if (word_count == 8'd1) begin
-                    // That was the last word
                     state <= S_WAIT_CMD;
                 end else begin
-                    // More words to receive
                     byte_pos <= 2'd3;
                     byte_ret <= S_STORE_DATA;
                     state    <= RX_POLL;
                 end
             end
-
+ 
             // ======================================================
-            //  PROTOCOL: READ  -  read mem, split into bytes, send
-            //  For each word: read BRAM (1-cycle latency), then send
-            //  4 bytes MSB first over UART.
+            //  CMD_READ - citire cuvinte 32-bit din memorie
             // ======================================================
-
+ 
             S_READ_MEM: begin
-                // Present address to BRAM; data appears next cycle
-                mem_addr <= cur_addr;
-                mem_we   <= 1'b0;
-                state    <= S_READ_LATCH;
+                mem_addr_reg <= cur_addr;
+                mem_we_reg   <= 1'b0;
+                state        <= S_READ_LATCH;
             end
-
+ 
             S_READ_LATCH: begin
-                // BRAM synchronous read: data_out is valid this cycle
                 data_buf <= mem_data_out;
-                byte_pos <= 2'd3;        // start with MSB
+                byte_pos <= 2'd3;
                 state    <= S_SEND_BYTE;
             end
-
+ 
             S_SEND_BYTE: begin
-                // Select the correct byte from data_buf
                 case (byte_pos)
                     2'd3: tx_byte <= data_buf[31:24];
                     2'd2: tx_byte <= data_buf[23:16];
@@ -516,40 +650,35 @@ module mem_ctrl (
                 tx_ret <= S_SENT_BYTE;
                 state  <= TX_CHK;
             end
-
+ 
             S_SENT_BYTE: begin
                 if (byte_pos > 2'd0) begin
-                    // More bytes in this word
                     byte_pos <= byte_pos - 2'd1;
                     state    <= S_SEND_BYTE;
                 end else begin
-                    // All 4 bytes of this word have been sent
                     state <= S_NEXT_WORD;
                 end
             end
-
+ 
             S_NEXT_WORD: begin
                 cur_addr   <= cur_addr + 16'd1;
                 word_count <= word_count - 8'd1;
-
                 if (word_count == 8'd1) begin
-                    // Last word was just sent
                     state <= S_WAIT_CMD;
                 end else begin
-                    // More words to read and send
                     state <= S_READ_MEM;
                 end
             end
-
+ 
             // ======================================================
-            //  DEFAULT: should never happen; safe fallback
+            //  DEFAULT: fallback sigur la initializare
             // ======================================================
             default: begin
                 state <= S_INIT;
             end
-
+ 
             endcase
         end
     end
-
+ 
 endmodule

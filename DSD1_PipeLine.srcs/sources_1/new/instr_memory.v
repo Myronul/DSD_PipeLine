@@ -51,32 +51,32 @@ module instr_memory(
     // Default program loaded at power-on.
     // Will be overwritten by mem_ctrl via UART at runtime.
     initial begin
-        instrMemory[0]  = 16'b1100001000000111; /*LOADC R2,7*/
-        instrMemory[1]  = 16'b1100001100000011; /*LOADC R3,3*/
-        instrMemory[2]  = 16'b1100010000000000; /*LOADC R4,0*/
-        instrMemory[3]  = 16'b0000000000000000; /*NOP*/
-        instrMemory[4]  = 16'b0000000000000000; /*NOP*/
-        instrMemory[5]  = 16'b0000001010010011; /*ADD R2,R2,R3*/
-        instrMemory[6]  = 16'b0000000000000000; /*NOP*/
-        instrMemory[7]  = 16'b0000000000000000; /*NOP*/
-        instrMemory[8]  = 16'b0000000000000000; /*NOP*/
-        instrMemory[9]  = 16'b0000000000000000; /*NOP*/
-        instrMemory[10] = 16'b0000000000000000; /*NOP*/
-        instrMemory[11] = 16'b1010010000000010; /*STORE R4,R2*/
-        instrMemory[12] = 16'b0000000000000000; /*NOP*/
-        instrMemory[13] = 16'b0000000000000000; /*NOP*/
-        instrMemory[14] = 16'b0000000000000000; /*NOP*/
-        instrMemory[15] = 16'b0000000000000000; /*NOP*/
-        instrMemory[16] = 16'b0000000000000000; /*NOP*/
-        instrMemory[17] = 16'b1000010000000101; /*LOAD R4,R5*/
-        instrMemory[18] = 16'b0000000000000000; /*NOP*/
-        instrMemory[19] = 16'b0000000000000000; /*NOP*/
-        instrMemory[20] = 16'b0000000000000000; /*NOP*/
-        instrMemory[21] = 16'b0000000000000000; /*NOP*/
-        instrMemory[22] = 16'b1111000000000100; /*JMP R4*/
-        instrMemory[23] = 16'b0000000000000000; /*NOP*/
-        instrMemory[24] = 16'b0000000000000000; /*NOP*/
-        instrMemory[25] = 16'b0000000000000000; /*NOP*/
+        //instrMemory[0]  = 16'b1100001000000111; /*LOADC R2,7*/
+        //instrMemory[1]  = 16'b1100001100000011; /*LOADC R3,3*/
+        //instrMemory[2]  = 16'b1100010000000000; /*LOADC R4,0*/
+        //instrMemory[3]  = 16'b0000000000000000; /*NOP*/
+        //instrMemory[4]  = 16'b0000000000000000; /*NOP*/
+        //instrMemory[5]  = 16'b0000001010010011; /*ADD R2,R2,R3*/
+        //instrMemory[6]  = 16'b0000000000000000; /*NOP*/
+        //instrMemory[7]  = 16'b0000000000000000; /*NOP*/
+        //instrMemory[8]  = 16'b0000000000000000; /*NOP*/
+        //instrMemory[9]  = 16'b0000000000000000; /*NOP*/
+        //instrMemory[10] = 16'b0000000000000000; /*NOP*/
+        //instrMemory[11] = 16'b1010010000000010; /*STORE R4,R2*/
+        //instrMemory[12] = 16'b0000000000000000; /*NOP*/
+        //instrMemory[13] = 16'b0000000000000000; /*NOP*/
+        //instrMemory[14] = 16'b0000000000000000; /*NOP*/
+        //instrMemory[15] = 16'b0000000000000000; /*NOP*/
+        //instrMemory[16] = 16'b0000000000000000; /*NOP*/
+        //instrMemory[17] = 16'b1000010000000101; /*LOAD R4,R5*/
+        //instrMemory[18] = 16'b0000000000000000; /*NOP*/
+        //instrMemory[19] = 16'b0000000000000000; /*NOP*/
+        //instrMemory[20] = 16'b0000000000000000; /*NOP*/
+        //instrMemory[21] = 16'b0000000000000000; /*NOP*/
+        //instrMemory[22] = 16'b1111000000000100; /*JMP R4*/
+        //instrMemory[23] = 16'b0000000000000000; /*NOP*/
+        //instrMemory[24] = 16'b0000000000000000; /*NOP*/
+        //instrMemory[25] = 16'b0000000000000000; /*NOP*/
     end
 
     // Port A: synchronous write (mem_ctrl programs instructions)

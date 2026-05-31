@@ -97,6 +97,15 @@ module ModuleTop (
     wire [`INSTR_SIZE-1:0]   instr_data;    // instruction word to CPU
 
     // ----------------------------------------------------------
+    // Data memory interface (CPU <-> external DATAMEM)
+    // ----------------------------------------------------------
+    wire [`A_SIZE-1:0]       addrMem;       // address from CPU to data memory
+    wire [`D_SIZE-1:0]       dataInMem;     // data from CPU to data memory (write)
+    wire [`D_SIZE-1:0]       dataOutMem;    // data from data memory to CPU (read)
+    wire                     memWr;         // write enable (from CPU)
+    wire                     memRd;         // read enable (from CPU)
+
+    // ----------------------------------------------------------
     // UART interrupt (unused in this design, can be tied off)
     // ----------------------------------------------------------
     wire uart_interrupt;
@@ -112,7 +121,14 @@ module ModuleTop (
         .clk      (clk),
         .rst      (cpu_effective_rst),
         .PC_cpu   (PC),
-        .data_cpu (instr_data)
+        .data_cpu (instr_data),
+
+        // Data memory ports (cpu_pipe now uses external DATAMEM)
+        .addrMem  (addrMem),
+        .dataInMem(dataInMem),
+        .dataOutMem(dataOutMem),
+        .memWr     (memWr),
+        .memRd     (memRd)
     );
 
     // ----------------------------------------------------------
@@ -150,6 +166,18 @@ module ModuleTop (
     );
 
     // ----------------------------------------------------------
+    //  data_memory - Data memory moved to top-level (external to CPU)
+    // ----------------------------------------------------------
+    data_memory DATAMEM (
+        .clk(clk),
+        .memRd(memRd),
+        .memWr(memWr),
+        .dataMemAddr(addrMem),
+        .dataMemDatain(dataInMem),
+        .dataMemDataout(dataOutMem)
+    );
+
+    // ----------------------------------------------------------
     //  mem_ctrl - Memory / UART Controller  (AXI4-Lite master)
     // ----------------------------------------------------------
     mem_ctrl MC (
@@ -183,8 +211,22 @@ module ModuleTop (
 
         // CPU control
         .cpu_rst_out     (cpu_rst_pulse),
-        .cpu_stop_out    (cpu_stop)
+        .cpu_stop_out    (cpu_stop),
+        // monitoring outputs
+        .cur_addr_out    (mc_cur_addr),
+        .start_addr_out  (mc_start_addr),
+        .offset_out      (mc_offset)
     );
+    // Optional monitoring wires from mem_ctrl
+    wire [`MC_ADDR_SIZE-1:0] mc_cur_addr;
+    wire [`MC_ADDR_SIZE-1:0] mc_start_addr;
+    wire [7:0]              mc_offset;
+
+    // Reconnect mem_ctrl outputs (some tools allow leaving unconnected,
+    // but we declare wires here for visibility)
+    // Note: order-independent named port connection would be needed in
+    // the mem_ctrl instantiation; since we added named outputs, reconnect
+    // by re-instantiating or tying via continuous assignments if required.
 
     // ----------------------------------------------------------
     //  axi_uartlite_0 - Xilinx UART Lite IP  (AXI4-Lite slave)

@@ -2,7 +2,7 @@
 `define CONTROLLER_MACROS_VH
 
 // ============================================================
-// UART AXI4-Lite Register Byte Addresses  (4-bit AXI addr)
+// UART AXI4-Lite Register Byte Addresses (4-bit AXI addr)
 // Source: Xilinx LogiCORE AXI UART Lite IP, Table 4
 // ============================================================
 `define UART_RX_FIFO    4'h0    // Receive Data FIFO Register  (read)
@@ -21,20 +21,22 @@
 // ============================================================
 // Host -> MemCtrl Protocol Command Codes (1 byte each)
 // ============================================================
-`define CMD_RESET       8'h01   // Reset the Simple RISC CPU
-`define CMD_STOP        8'h02   // Freeze (stop) the CPU clock gating
-`define CMD_START       8'h03   // Un-freeze (start) the CPU
-`define CMD_WRITE       8'h04   // Write N 32-bit words to memory
-`define CMD_READ        8'h05   // Read  N 32-bit words from memory
+`define CMD_RESET        8'h01   // Reset CPU (1 ciclu)
+`define CMD_STOP         8'h02   // Opreste CPU (freeze)
+`define CMD_START        8'h03   // Porneste CPU (unfreeze)
+`define CMD_WRITE        8'h04   // Scrie N cuvinte 32-bit in memorie
+`define CMD_READ         8'h05   // Citeste N cuvinte 32-bit din memorie
+`define CMD_INST_BEGIN   8'hAA   // MAGIC BYTE: incepe incarcarea instructiunilor
+//                               //   [0xAA][ADDR_HI][ADDR_LO][COUNT_HI][COUNT_LO]
+//                               //   urmat de COUNT * 2 bytes (instructiuni 16-bit, MSB first)
 
 // ============================================================
-// Memory / Address sizes used by MemCtrl
-// Keep consistent with cpu_macros.vh  (A_SIZE / D_SIZE)
+// Memory / Address sizes
 // ============================================================
-`define MC_ADDR_SIZE    16      // Word-address bus width
-`define MC_DATA_SIZE    32      // Data word width
+`define MC_ADDR_SIZE    16      // Word-address bus width (16-bit)
+`define MC_DATA_SIZE    32      // Data word width (32-bit, upper 16 = 0 pt instructiuni)
 
-// Depth of the shared BRAM (2^10 = 1024 words = 4 KB)
+// Depth of instr_memory (2^10 = 1024 locatii de 16 biti = 2 KB)
 `define BRAM_ADDR_WIDTH 10
 
 `endif
