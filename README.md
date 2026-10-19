@@ -4,7 +4,7 @@ A 4-stage pipelined 16-bit RISC-style CPU written in Verilog. The design has a c
 
 ## Overview
 
-DSD_PipeLine is a digital system design project that implements a small processor from scratch. Instructions are 16 bits wide, data is 32 bits wide, and the address space is parameterized (`A_SIZE = 20`). The pipeline overlaps instruction fetch, decode/register read, execution, and write-back, and it resolves control hazards (jumps) and memory-latency hazards (loads) in hardware.
+This is a digital system design project that implements a small processor from scratch. Instructions are 16 bits wide, data is 32 bits wide, and the address space is parameterized (`A_SIZE = 20`). The pipeline overlaps instruction fetch, decode/register read, execution, and write-back, and it resolves control hazards (jumps) and memory-latency hazards (loads) in hardware.
 
 ## Key Features
 
